@@ -1,0 +1,171 @@
+[project]
+name = "petstore"
+version = "0.1.0"
+description = "Small, reusable tools for personal Python development."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [{ name = "Ancient" }]
+dependencies = [
+    "pyyaml>=6.0.2",
+]
+
+[project.scripts]
+petstore-requirements = "petstore.traceability:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/petstore"]
+
+[tool.uv]
+package = true
+
+[dependency-groups]
+dev = [
+    "bandit>=1.8.6",
+    "commitizen>=4.18.0",
+    "complexipy>=4.0.2",
+    "interrogate>=1.7.0",
+    "mypy>=1.17.1",
+    "poethepoet>=0.48.0",
+    "pre-commit>=4.6.2",
+    "pylint>=3.3.8",
+    "pytest>=8.4.1",
+    "pytest-cov>=6.2.1",
+    "ruff>=0.12.10",
+    "types-pyyaml>=6.0.12",
+    "vulture>=2.14",
+]
+
+[tool.poe.tasks]
+test = { cmd = "pytest", help = "Run tests with line and branch coverage" }
+format = { cmd = "ruff format .", help = "Format source and test files" }
+format-check = { cmd = "ruff format --check .", help = "Check formatting without changes" }
+lint = { cmd = "ruff check .", help = "Run Ruff lint checks" }
+lint-fix = { cmd = "ruff check --fix .", help = "Apply safe Ruff lint fixes" }
+typecheck = { cmd = "mypy", help = "Run strict static type checking" }
+pylint = { cmd = "pylint src tests", help = "Run Pylint with a required 10/10 score" }
+complexity = { cmd = "complexipy --max-complexity-allowed 15 src tests", help = "Enforce per-function cognitive complexity" }
+docs = { cmd = "interrogate src", help = "Check production documentation coverage" }
+dead-code = { cmd = "vulture", help = "Find unused production code" }
+security = { cmd = "bandit -c pyproject.toml -r src", help = "Run static security checks on production code" }
+requirements = { cmd = "petstore-requirements", help = "Validate requirement-to-test traceability and emit canonical YAML" }
+hooks = { cmd = "pre-commit install --install-hooks", help = "Install all Git hooks" }
+hooks-run = { cmd = "pre-commit run --all-files", help = "Run pre-commit hooks over all files" }
+commit = { cmd = "cz commit", help = "Create a Conventional Commit interactively" }
+commit-check = { cmd = "cz check", help = "Validate Conventional Commit messages" }
+fix = { sequence = ["format", "lint-fix"], help = "Format code and apply safe lint fixes" }
+quality = { sequence = [
+    "format-check",
+    "lint",
+    "typecheck",
+    "pylint",
+    "complexity",
+    "docs",
+    "dead-code",
+    "security",
+    "requirements",
+    "test",
+], help = "Run every required quality gate" }
+
+[tool.commitizen]
+name = "cz_conventional_commits"
+version_provider = "pep621"
+tag_format = "v$version"
+major_version_zero = true
+update_changelog_on_bump = true
+allowed_prefixes = []
+
+[tool.pytest.ini_options]
+addopts = [
+    "--strict-config",
+    "--strict-markers",
+    "--cov=petstore",
+    "--cov-branch",
+    "--cov-report=term-missing",
+    "--cov-fail-under=100",
+]
+markers = [
+    "requirement(*ids, functionality, test_type): trace a test to requirement IDs, invoked functionality string(s), and its test classification",
+]
+testpaths = ["tests"]
+
+[tool.coverage.run]
+branch = true
+source = ["petstore"]
+
+[tool.coverage.report]
+fail_under = 100
+show_missing = true
+skip_covered = false
+
+[tool.ruff]
+line-length = 150
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "COM812", # Conflicts with the formatter.
+    "CPY001", # The project carries a repository-level LICENSE.
+    "D203",   # Conflicts with D211.
+    "D213",   # Conflicts with D212.
+    "TRY003", # Dynamic ValueError text belongs at the validation site.
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 15
+
+[tool.ruff.lint.pylint]
+max-nested-blocks = 3
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+files = ["src", "tests"]
+
+[tool.pylint.main]
+py-version = "3.10"
+recursive = true
+ignore-paths = ['^\.venv/']
+
+[tool.pylint."messages control"]
+disable = [
+    "missing-function-docstring",
+    "too-few-public-methods",
+]
+
+[tool.pylint.format]
+max-line-length = 150
+
+[tool.pylint.design]
+max-nested-blocks = 3
+
+[tool.pylint.reports]
+score = false
+
+[tool.interrogate]
+fail-under = 100
+exclude = ["tests"]
+ignore-init-method = true
+ignore-module = false
+ignore-nested-functions = true
+ignore-private = true
+ignore-property-decorators = true
+verbose = 1
+
+[tool.vulture]
+exclude = [".venv/"]
+min_confidence = 100
+paths = ["src", "tests"]
+sort_by_size = true
+
+[tool.bandit]
+recursive = true
+targets = ["src"]

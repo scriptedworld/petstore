@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.coverage
+coverage.xml
+.mypy_cache/
+.ruff_cache/
+dist/
+build/
+*.egg-info/
+
+# Transient working files
+.ephemera/

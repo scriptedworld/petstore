@@ -1,0 +1,253 @@
+schema_version: 1
+module: petstore.iteration
+id_prefix: PS-ITER
+next_id: 17
+
+requirements:
+  - id: PS-ITER-001
+    title: Deferred iteration
+    status: active
+    introduced: 0.1.0
+    statement: >-
+      zip_iter shall return a lazy, single-pass iterator. It shall not call
+      iter() on an input until the result is first advanced, and it shall not
+      cache the input values.
+    functionality:
+      - zip_iter.lifecycle
+    required_test_types:
+      - invariant
+
+  - id: PS-ITER-002
+    title: Shortest-input mode
+    status: active
+    introduced: 0.1.0
+    statement: >-
+      In shortest mode, iteration shall stop when any input is exhausted,
+      matching the built-in zip(..., strict=False) behavior.
+    functionality:
+      - zip_iter.shortest
+    required_test_types:
+      - positive
+
+  - id: PS-ITER-003
+    title: Strict mode with equal inputs
+    status: active
+    introduced: 0.1.0
+    statement: >-
+      In strict mode, equally sized inputs shall produce the same tuples as the
+      built-in zip(..., strict=True) operation.
+    functionality:
+      - zip_iter.strict
+    required_test_types:
+      - positive
+
+  - id: PS-ITER-004
+    title: Strict mode mismatch
+    status: active
+    introduced: 0.1.0
+    statement: >-
+      In strict mode, advancing across differently sized inputs shall raise
+      ValueError.
+    functionality:
+      - zip_iter.strict
+    required_test_types:
+      - negative
+
+  - id: PS-ITER-005
+    title: First-input mode
+    status: retired
+    introduced: 0.1.0
+    retired: "2026-08-25"
+    retirement_reason: Replaced scalar fill behavior with per-input fill specifications.
+    superseded_by:
+      - PS-ITER-009
+    statement: >-
+      In first mode, the first input shall determine the output length. Shorter
+      subsequent inputs shall use fillvalue; values beyond the first input's
+      length shall remain unconsumed.
+    functionality:
+      - zip_iter.first
+    required_test_types: []
+
+  - id: PS-ITER-006
+    title: Longest-input mode
+    status: retired
+    introduced: 0.1.0
+    retired: "2026-08-25"
+    retirement_reason: Replaced scalar fill behavior with per-input fill specifications.
+    superseded_by:
+      - PS-ITER-010
+    statement: >-
+      In longest mode, iteration shall continue until every input is exhausted.
+      Missing positions shall use fillvalue.
+    functionality:
+      - zip_iter.longest
+    required_test_types: []
+
+  - id: PS-ITER-007
+    title: Empty invocation
+    status: active
+    introduced: 0.1.0
+    statement: >-
+      Calling zip_iter without inputs shall produce an empty iterator in every
+      supported mode.
+    functionality:
+      - zip_iter.empty
+    required_test_types:
+      - edge
+
+  - id: PS-ITER-008
+    title: Mode selection
+    status: retired
+    introduced: 0.1.0
+    retired: "2026-08-25"
+    retirement_reason: The validation path is directly testable and does not require an injected seam.
+    superseded_by:
+      - PS-ITER-013
+    statement: >-
+      Modes shall be selectable using either a ZipMode member or its string
+      value. An unsupported string shall raise ValueError with a diagnostic
+      identifying the invalid mode and the supported choices. Mode validation
+      shall be isolated behind the injectable _mode_parser seam.
+    functionality:
+      - zip_iter.strict
+      - zip_iter.empty
+      - zip_iter.mode_validation
+      - zip_iter.mode_parser_seam
+    required_test_types: []
+
+  - id: PS-ITER-009
+    title: First-input mode with per-input fills
+    status: active
+    introduced: 0.1.0
+    statement: >-
+      In first mode, the first input shall determine the output length. Each
+      shorter subsequent input shall use the fill value associated with its
+      input position; values beyond the first input's length shall remain
+      unconsumed.
+    functionality:
+      - zip_iter.first
+    required_test_types:
+      - positive
+      - invariant
+
+  - id: PS-ITER-010
+    title: Longest-input mode with per-input fills
+    status: active
+    introduced: 0.1.0
+    statement: >-
+      In longest mode, iteration shall continue until every input is exhausted.
+      Each missing position shall use the fill value associated with that input.
+    functionality:
+      - zip_iter.longest
+    required_test_types:
+      - positive
+
+  - id: PS-ITER-011
+    title: Fill-value configuration
+    status: retired
+    introduced: 0.1.0
+    retired: "2026-08-25"
+    retirement_reason: Fill-count failures are directly testable and do not require an injected seam.
+    superseded_by:
+      - PS-ITER-014
+    statement: >-
+      First and longest modes shall accept exactly one fill value for each
+      input. Omitting fillvalues shall use None for every position. A mismatched
+      number of fill values shall raise ValueError. Validation shall be isolated
+      behind the injectable _fillvalue_parser seam.
+    functionality:
+      - zip_iter.first
+      - zip_iter.longest
+      - zip_iter.fillvalue_validation
+      - zip_iter.fillvalue_parser_seam
+    required_test_types: []
+
+  - id: PS-ITER-012
+    title: Dynamic fill factories
+    status: retired
+    introduced: 0.1.0
+    retired: "2026-08-25"
+    retirement_reason: User-supplied factory failures are directly testable and do not require an injected resolver seam.
+    superseded_by:
+      - PS-ITER-015
+    statement: >-
+      A fill specification wrapped in FillFactory shall invoke its zero-argument
+      factory once for each missing output position and only when that position
+      is missing. An unwrapped callable shall remain a static value and shall
+      not be invoked. Factory resolution shall be isolated behind the injectable
+      _fillvalue_resolver seam.
+    functionality:
+      - zip_iter.dynamic_fill
+      - zip_iter.static_callable_fill
+      - zip_iter.fillvalue_resolver_seam
+    required_test_types: []
+
+  - id: PS-ITER-013
+    title: Mode selection without unnecessary seams
+    status: active
+    introduced: 0.1.0
+    statement: >-
+      Modes shall be selectable using either a ZipMode member or its string
+      value. An unsupported string shall raise ValueError with a diagnostic
+      identifying the invalid mode and the supported choices.
+    functionality:
+      - zip_iter.strict
+      - zip_iter.empty
+      - zip_iter.mode_validation
+    required_test_types:
+      - positive
+      - negative
+      - edge
+
+  - id: PS-ITER-014
+    title: Directly validated fill-value configuration
+    status: active
+    introduced: 0.1.0
+    statement: >-
+      First and longest modes shall accept exactly one fill value for each
+      input. Omitting fillvalues shall use None for every position. A mismatched
+      number of fill values shall raise ValueError.
+    functionality:
+      - zip_iter.first
+      - zip_iter.longest
+      - zip_iter.fillvalue_validation
+    required_test_types:
+      - positive
+      - negative
+      - invariant
+
+  - id: PS-ITER-015
+    title: Directly tested dynamic fill factories
+    status: retired
+    introduced: 0.1.0
+    retired: "2026-08-25"
+    retirement_reason: >-
+      Replaced the FillFactory wrapper with direct zero-argument callable fill
+      values to keep the public interface functional and minimal.
+    superseded_by:
+      - PS-ITER-016
+    statement: >-
+      A fill specification wrapped in FillFactory shall invoke its zero-argument
+      factory once for each missing output position and only when that position
+      is missing. An unwrapped callable shall remain a static value and shall
+      not be invoked.
+    functionality:
+      - zip_iter.dynamic_fill
+      - zip_iter.static_callable_fill
+    required_test_types:
+      - positive
+      - edge
+
+  - id: PS-ITER-016
+    title: Callable fill values
+    status: active
+    introduced: 0.1.0
+    statement: >-
+      A callable fill value shall be invoked without arguments once for each
+      missing output position and only when that position is missing. Other
+      fill values shall be used directly.
+    functionality:
+      - zip_iter.dynamic_fill
+    required_test_types:
+      - positive
