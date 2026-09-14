@@ -72,6 +72,104 @@ fresh value each time its input position is missing.
 All input iterables are converted to iterators only when iteration begins. The
 result is single-pass and does not cache input values.
 
+## Validated attributes
+
+Module documentation and its identified requirements are maintained in
+[`docs/modules/validation.md`](docs/modules/validation.md), with the canonical
+requirement registry in
+[`docs/modules/validation.requirements.yaml`](docs/modules/validation.requirements.yaml).
+
+`petstore.Validated` checks a value at the moment it is assigned, so a
+constructed object is a valid one. A rule is an ordinary function: value in,
+raise on problem, return nothing.
+
+```python
+from dataclasses import dataclass
+
+from petstore import Validated, ValidationError
+
+
+def positive(value: int) -> None:
+    if value <= 0:
+        message = "must be positive"
+        raise ValidationError(message)
+
+
+SIZE = Validated(positive)
+
+
+@dataclass(frozen=True)
+class Batch:
+    size: Validated[int] = SIZE
+
+
+Batch(4).size  # 4
+Batch(0)  # ValidationError: size must be positive
+```
+
+Rules run in declaration order and the first to reject a value determines the
+failure. The rule supplies only what is wrong; the descriptor supplies which
+attribute it was, defaulting to the attribute name and overridable with
+`label=`. Validation applies to later assignment exactly as to construction,
+and works on frozen dataclasses, which reject ordinary attribute assignment.
+
+## Scripted test doubles
+
+Module documentation and its identified requirements are maintained in
+[`docs/modules/stubs.md`](docs/modules/stubs.md), with the canonical requirement
+registry in
+[`docs/modules/stubs.requirements.yaml`](docs/modules/stubs.requirements.yaml).
+
+`petstore.Stub` builds a callable whose successive outcomes are declared in
+advance and whose invocations are recorded:
+
+```python
+from petstore import Stub
+
+fetch = Stub().returns(200).yields("a").yields("b").raises(TimeoutError)
+
+fetch()  # 200
+fetch()  # an iterator producing "a" then "b"
+fetch()  # raises TimeoutError
+```
+
+`returns` and `raises` each describe one whole call. `yields` and `yields_from`
+mirror the statements they are named after and accumulate into a single call's
+iterator, which the next `returns` or `raises` closes. Calling past the end of
+the script raises `StubExhaustedError` rather than silently repeating, and the
+unscripted call is still recorded. When repetition is wanted, a modifier widens
+the most recent link: `times(n)` for a counted run, `over(seconds=30)` for a time
+window measured by an injectable clock, or `always()` for every later call.
+
+Declaring a signature, either as parameter names or copied from a real callable,
+makes the stub reject calls the real function would reject and records arguments
+bound to their parameter names through `calls[n].bound_arguments`.
+
+## Path locks
+
+Module documentation and its identified requirements are maintained in
+[`docs/modules/locking.md`](docs/modules/locking.md), with the canonical
+requirement registry in
+[`docs/modules/locking.requirements.yaml`](docs/modules/locking.requirements.yaml).
+
+`petstore.locked` holds an exclusive lock named for a path, honored across
+processes:
+
+```python
+from petstore import locked
+
+with locked("/srv/app/socket"):
+    ...
+
+with locked("/srv/app/socket", timeout=5):
+    ...  # raises LockTimeoutError if still held after five seconds
+```
+
+The lock is an advisory `flock` on a private lock file named for the resolved
+path, so the path itself need not exist and is never touched. Lock files live
+under `$XDG_RUNTIME_DIR`; use `make_locked(lock_dir=...)` where no runtime
+directory exists. POSIX only.
+
 ## Quality gates
 
 Install the development tools and run the standard project gate through UV:

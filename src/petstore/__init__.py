@@ -1,5 +1,21 @@
 """Reusable tools for personal Python development."""
 
 from .iteration import ZipMode, zip_iter
+from .locking import LockError, LockTimeoutError, locked, make_locked
+from .stubs import CallEvent, Stub, StubExhaustedError
+from .validation import Rule, Validated, ValidationError
 
-__all__ = ["ZipMode", "zip_iter"]
+__all__ = [
+    "CallEvent",
+    "LockError",
+    "LockTimeoutError",
+    "Rule",
+    "Stub",
+    "StubExhaustedError",
+    "Validated",
+    "ValidationError",
+    "ZipMode",
+    "locked",
+    "make_locked",
+    "zip_iter",
+]

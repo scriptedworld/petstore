@@ -1,0 +1,177 @@
+schema_version: 1
+module: petstore.stubs
+id_prefix: PS-STUB
+next_id: 12
+
+requirements:
+  - id: PS-STUB-001
+    title: Scripted call sequence
+    status: active
+    introduced: 0.1.0
+    statement: >-
+      Successive calls shall consume the scripted links in declaration order.
+      A returns or raises link shall describe exactly one whole call.
+    functionality:
+      - stub.script
+    required_test_types:
+      - positive
+
+  - id: PS-STUB-002
+    title: Value and exception outcomes
+    status: active
+    introduced: 0.1.0
+    statement: >-
+      A link shall be able to return a value, or raise an exception supplied as
+      either an instance or a zero-argument type.
+    functionality:
+      - stub.outcomes
+    required_test_types:
+      - positive
+      - negative
+
+  - id: PS-STUB-003
+    title: Generator composition
+    status: active
+    introduced: 0.1.0
+    statement: >-
+      yields shall contribute one value and yields_from shall delegate to an
+      iterable, mirroring the yield and yield-from statements. A consecutive run
+      of them shall accumulate into a single call's iterator, which the next
+      returns or raises link shall close.
+    functionality:
+      - stub.generators
+    required_test_types:
+      - positive
+      - edge
+
+  - id: PS-STUB-004
+    title: Script exhaustion
+    status: active
+    introduced: 0.1.0
+    statement: >-
+      Calling a stub more times than its script describes shall raise
+      StubExhaustedError rather than repeating or cycling, and the unscripted
+      call shall still be recorded.
+    functionality:
+      - stub.exhaustion
+    required_test_types:
+      - negative
+      - edge
+
+  - id: PS-STUB-005
+    title: Call recording
+    status: active
+    introduced: 0.1.0
+    statement: >-
+      Every invocation shall be recorded in order with its positional and
+      keyword arguments, and the recorded count shall be available separately.
+    functionality:
+      - stub.history
+    required_test_types:
+      - positive
+      - invariant
+
+  - id: PS-STUB-006
+    title: Declared signatures
+    status: active
+    introduced: 0.1.0
+    statement: >-
+      A stub shall optionally accept a signature, given as parameter names or
+      copied from a callable, and shall bind invocation arguments to those
+      names. The two sources shall be mutually exclusive, and a stub without a
+      declared signature shall record no bound arguments.
+    functionality:
+      - stub.signature
+    required_test_types:
+      - positive
+      - negative
+      - edge
+
+  - id: PS-STUB-007
+    title: Repeating link
+    status: active
+    introduced: 0.1.0
+    statement: >-
+      always shall make the most recent link describe this and every later
+      call, so a stub whose final link repeats is never called more times than
+      its script describes. A repeated generator link shall build a fresh
+      iterator on each call. always without a preceding link, and any link added
+      after always, shall raise ValueError.
+    functionality:
+      - stub.always
+    required_test_types:
+      - positive
+      - negative
+      - edge
+
+  - id: PS-STUB-008
+    title: Counted link
+    status: retired
+    introduced: 0.1.0
+    retired: "2026-09-13"
+    retirement_reason: The timed modifier this statement names was renamed from for_ to over.
+    superseded_by:
+      - PS-STUB-010
+    statement: >-
+      times shall make the most recent link cover the given number of
+      consecutive calls before the next link applies. A count below one, a
+      missing preceding link, or a link that already carries a modifier shall
+      raise ValueError; a link shall take at most one of times, for_, or
+      always.
+    functionality:
+      - stub.times
+    required_test_types: []
+
+  - id: PS-STUB-009
+    title: Timed link
+    status: retired
+    introduced: 0.1.0
+    retired: "2026-09-13"
+    retirement_reason: Renamed for_ to over.
+    superseded_by:
+      - PS-STUB-011
+    statement: >-
+      for_ shall make the most recent link cover every call made within a
+      duration given in hours, minutes, and seconds. The window shall open at
+      the first call that reaches the link and shall be measured by the stub's
+      clock, which shall be replaceable. A non-positive duration shall raise
+      ValueError, and a timed final link whose window has closed shall leave
+      the stub exhausted.
+    functionality:
+      - stub.for
+    required_test_types: []
+
+  - id: PS-STUB-010
+    title: Counted link
+    status: active
+    introduced: 0.1.0
+    statement: >-
+      times shall make the most recent link cover the given number of
+      consecutive calls before the next link applies. A count below one, a
+      missing preceding link, or a link that already carries a modifier shall
+      raise ValueError; a link shall take at most one of times, over, or
+      always.
+    functionality:
+      - stub.times
+    required_test_types:
+      - positive
+      - negative
+      - edge
+
+  - id: PS-STUB-011
+    title: Timed link
+    status: active
+    introduced: 0.1.0
+    statement: >-
+      over shall make the most recent link cover every call made within a
+      duration given in hours, minutes, and seconds. The window shall open at
+      the first call that reaches the link and shall be measured by the stub's
+      clock, which shall be replaceable. A non-positive duration shall raise
+      ValueError, and a timed final link whose window has closed shall leave
+      the stub exhausted.
+    functionality:
+      - stub.over
+    required_test_types:
+      - positive
+      - negative
+      - edge

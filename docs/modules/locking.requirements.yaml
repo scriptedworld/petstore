@@ -1,0 +1,93 @@
+schema_version: 1
+module: petstore.locking
+id_prefix: PS-LOCK
+next_id: 7
+
+requirements:
+  - id: PS-LOCK-001
+    title: Cross-process exclusion
+    status: active
+    introduced: 0.1.0
+    statement: >-
+      While one holder keeps the lock named for a path, no other holder in the
+      same or another process shall acquire it. Once it is released, another
+      holder shall be able to acquire it.
+    functionality:
+      - lock.exclusion
+    required_test_types:
+      - positive
+      - invariant
+
+  - id: PS-LOCK-002
+    title: Blocking acquisition
+    status: active
+    introduced: 0.1.0
+    statement: >-
+      Without a timeout, acquisition shall wait for as long as another holder
+      keeps the lock, using a single blocking attempt rather than polling.
+    functionality:
+      - lock.blocking
+    required_test_types:
+      - positive
+
+  - id: PS-LOCK-003
+    title: Timed acquisition
+    status: active
+    introduced: 0.1.0
+    statement: >-
+      With a timeout, acquisition shall retry without blocking, sleeping no
+      longer than the time remaining, until the lock is free or the timeout
+      passes, at which point LockTimeoutError shall be raised. A zero timeout
+      shall make exactly one attempt. A negative timeout shall raise ValueError
+      before any lock file is opened.
+    functionality:
+      - lock.timeout
+    required_test_types:
+      - positive
+      - negative
+      - edge
+
+  - id: PS-LOCK-004
+    title: Release
+    status: active
+    introduced: 0.1.0
+    statement: >-
+      The lock shall be released and its handle closed when the with block
+      exits normally, when the block raises, and when acquisition times out.
+    functionality:
+      - lock.release
+    required_test_types:
+      - invariant
+      - negative
+
+  - id: PS-LOCK-005
+    title: Lock naming
+    status: active
+    introduced: 0.1.0
+    statement: >-
+      A lock file shall be named for a digest of the resolved path, so that
+      different spellings of one location share a lock and different locations
+      do not. Lock files shall live in the configured lock directory, or by
+      default under the per-user runtime directory; with neither available,
+      LockError shall be raised before any lock file is opened.
+    functionality:
+      - lock.naming
+    required_test_types:
+      - positive
+      - negative
+      - edge
+
+  - id: PS-LOCK-006
+    title: Composition and production boundaries
+    status: active
+    introduced: 0.1.0
+    statement: >-
+      make_locked shall bind a lock directory and boundary policy into an
+      operational callable. The production boundaries shall create lock
+      directories and lock files readable only by their owner, and shall read
+      the runtime directory from the session environment.
+    functionality:
+      - lock.composition
+    required_test_types:
+      - positive
+      - invariant

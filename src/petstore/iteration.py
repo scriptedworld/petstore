@@ -44,9 +44,6 @@ def _parse_fillvalues(fillvalues: Iterable[Any] | None, iterable_count: int) -> 
 def _resolve_fillvalue(fillvalue: object) -> object:
     """Invoke a callable fill value or return a static value unchanged."""
     return fillvalue() if callable(fillvalue) else fillvalue
-    if callable(fillvalue):
-        return fillvalue()
-    return fillvalue
 
 
 def zip_iter(

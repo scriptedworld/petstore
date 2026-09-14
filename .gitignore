@@ -6,6 +6,8 @@ __pycache__/
 coverage.xml
 .mypy_cache/
 .ruff_cache/
+.complexipy_cache/
+.claude/settings.local.json
 dist/
 build/
 *.egg-info/

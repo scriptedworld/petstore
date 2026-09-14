@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
-from inspect import Parameter, Signature, signature
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, NamedTuple, NoReturn, Protocol, TypeVar, cast, overload
 
+from petstore.stubs import make_signature
+
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator
+    from inspect import Signature
 
 
 ResultT_co = TypeVar("ResultT_co", covariant=True)
@@ -83,7 +85,7 @@ def generate(
         message = "generate requires exactly one of returns, raises, or yields"
         raise ValueError(message)
 
-    call_signature = _make_signature(parameters, signature_from)
+    call_signature = make_signature(parameters, signature_from)
     yielded_values = tuple(cast("Iterable[object]", yields)) if yields is not _UNSET else ()
     history: list[CallEvent] = []
 
@@ -104,22 +106,6 @@ def generate(
     configured.call_count = 0
     configured.call_signature = call_signature
     return configured
-
-
-def _make_signature(
-    parameters: Iterable[str] | None,
-    signature_from: Callable[..., object] | None,
-) -> Signature | None:
-    """Build a call signature from one optional configuration source."""
-    if parameters is not None and signature_from is not None:
-        message = "parameters and signature_from are mutually exclusive"
-        raise ValueError(message)
-    if signature_from is not None:
-        return signature(signature_from)
-    if parameters is None:
-        return None
-    declared = tuple(Parameter(name, Parameter.POSITIONAL_OR_KEYWORD) for name in parameters)
-    return Signature(declared)
 
 
 def _bind_arguments(

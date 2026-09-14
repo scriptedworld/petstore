@@ -156,6 +156,9 @@ exclude = ["tests"]
 ignore-init-method = true
 ignore-module = false
 ignore-nested-functions = true
+# Ruff D418 forbids docstrings on @overload stubs; the implementation carries
+# the documentation. Without this the two configured tools contradict.
+ignore-overloaded-functions = true
 ignore-private = true
 ignore-property-decorators = true
 verbose = 1
