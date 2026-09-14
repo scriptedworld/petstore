@@ -30,46 +30,15 @@ dev = [
     "complexipy>=4.0.2",
     "interrogate>=1.7.0",
     "mypy>=1.17.1",
-    "poethepoet>=0.48.0",
     "pre-commit>=4.6.2",
     "pylint>=3.3.8",
     "pytest>=8.4.1",
     "pytest-cov>=6.2.1",
     "ruff>=0.12.10",
+    "rust-just==1.58.0",
     "types-pyyaml>=6.0.12",
     "vulture>=2.14",
 ]
-
-[tool.poe.tasks]
-test = { cmd = "pytest", help = "Run tests with line and branch coverage" }
-format = { cmd = "ruff format .", help = "Format source and test files" }
-format-check = { cmd = "ruff format --check .", help = "Check formatting without changes" }
-lint = { cmd = "ruff check .", help = "Run Ruff lint checks" }
-lint-fix = { cmd = "ruff check --fix .", help = "Apply safe Ruff lint fixes" }
-typecheck = { cmd = "mypy", help = "Run strict static type checking" }
-pylint = { cmd = "pylint src tests", help = "Run Pylint with a required 10/10 score" }
-complexity = { cmd = "complexipy --max-complexity-allowed 15 src tests", help = "Enforce per-function cognitive complexity" }
-docs = { cmd = "interrogate src", help = "Check production documentation coverage" }
-dead-code = { cmd = "vulture", help = "Find unused production code" }
-security = { cmd = "bandit -c pyproject.toml -r src", help = "Run static security checks on production code" }
-requirements = { cmd = "petstore-requirements", help = "Validate requirement-to-test traceability and emit canonical YAML" }
-hooks = { cmd = "pre-commit install --install-hooks", help = "Install all Git hooks" }
-hooks-run = { cmd = "pre-commit run --all-files", help = "Run pre-commit hooks over all files" }
-commit = { cmd = "cz commit", help = "Create a Conventional Commit interactively" }
-commit-check = { cmd = "cz check", help = "Validate Conventional Commit messages" }
-fix = { sequence = ["format", "lint-fix"], help = "Format code and apply safe lint fixes" }
-quality = { sequence = [
-    "format-check",
-    "lint",
-    "typecheck",
-    "pylint",
-    "complexity",
-    "docs",
-    "dead-code",
-    "security",
-    "requirements",
-    "test",
-], help = "Run every required quality gate" }
 
 [tool.commitizen]
 name = "cz_conventional_commits"

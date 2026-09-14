@@ -6,15 +6,18 @@ default_install_hook_types:
 repos:
   - repo: local
     hooks:
-      - id: quality
-        name: project quality gates
-        entry: uv run poe quality
+      # Hooks call just recipes and nothing else, so the gate a commit runs is
+      # the gate `just checks` runs by hand. uv supplies the pinned just, which
+      # is what makes this work where just is not installed system-wide.
+      - id: checks
+        name: every quality gate (just checks)
+        entry: uv run just checks
         language: system
         pass_filenames: false
         stages: [pre-commit]
 
-      - id: commitizen
-        name: conventional commit message
-        entry: uv run poe commit-check --commit-msg-file
+      - id: commit-check
+        name: conventional commit message (just commit-check)
+        entry: uv run just commit-check --commit-msg-file
         language: system
         stages: [commit-msg]

@@ -7,6 +7,7 @@ coverage.xml
 .mypy_cache/
 .ruff_cache/
 .complexipy_cache/
+.bolt-*/
 .claude/settings.local.json
 dist/
 build/

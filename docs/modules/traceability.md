@@ -2,7 +2,7 @@
 
 Module: `petstore.traceability`
 
-Command: `uv run poe requirements`
+Command: `uv run just requirements`, or the `petstore-requirements` console script
 
 ## Purpose
 

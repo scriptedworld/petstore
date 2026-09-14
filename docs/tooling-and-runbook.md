@@ -37,7 +37,7 @@ specification. Container creation performs a frozen synchronization from
 After creation, verify the environment:
 
 ```console
-uv run poe quality
+uv run just checks
 ```
 
 ### Local environment
@@ -46,39 +46,62 @@ Install UV, then run:
 
 ```console
 uv sync --frozen
-uv run poe hooks
-uv run poe quality
+uv run just hooks
+uv run just checks
 ```
 
 `uv sync --frozen` must fail rather than silently changing an outdated
 lockfile. Dependency changes are made deliberately with `uv add`, `uv remove`,
 or `uv lock`, followed by review of `uv.lock`.
 
-## Poe is the task interface
+## just is the task interface
 
-Poe owns the executable project workflow. Pre-commit and documentation should
-delegate to Poe rather than duplicate individual tool commands.
+`just` owns the executable project workflow, and it is the only task runner the
+repository has. Pre-commit hooks and documentation call `just` recipes rather
+than individual tools. This is an estate-wide standard: every project exposes
+the same recipe names, so the same words work in every tree.
 
-List the available tasks:
+`just` itself is pinned in `uv.lock` as the `rust-just` development dependency.
+`uv run just <recipe>` therefore needs nothing installed beyond UV, and behaves
+identically on a host, in the Dev Container, and in automation. Where `just` is
+installed system-wide, `just <recipe>` is the same command.
+
+The recipes are layered through imports, and the first layer to define a recipe
+wins:
+
+| File | Owner | Holds |
+| --- | --- | --- |
+| `Justfile` | Estate standard | Imports only, plus `default`. Identical in every project. |
+| `just/project.just` | This repository | petstore's own recipes, which override the base. |
+| `just/base.just` | toolbox, linked | The ten standard recipes, each a working default or a no-op that succeeds. |
+
+`just/base.just` and `bolt.secrets.yaml` are symlinks into the toolbox
+repository, created by `toolbox/bin/link-toolbox.py` with the `base` and
+`secrets` sets. Edit neither here; they are toolbox's.
+
+List every recipe:
 
 ```console
-uv run poe --help
+uv run just --list
 ```
 
-Frequently used tasks:
+Frequently used recipes:
 
-| Task | Purpose |
+| Recipe | Purpose |
 | --- | --- |
-| `quality` | Run every required quality gate in the standard order. |
+| `checks` | Run every quality gate, cheapest first, stopping at the first failure. |
+| `test` | Run the suite without coverage, for a fast inner loop. |
+| `coverage` | Run the suite with 100% line and branch coverage enforced. |
 | `fix` | Format files and apply safe Ruff fixes. |
-| `test` | Run Pytest with line and branch coverage. |
 | `requirements` | Validate requirement-to-test traceability and emit canonical YAML evidence. |
+| `leak-scan` | Run the estate's secrets jig through bolt. |
 | `hooks` | Install the configured `pre-commit` and `commit-msg` hooks. |
 | `hooks-run` | Run file-oriented pre-commit hooks against the repository. |
 | `commit` | Create a Conventional Commit through Commitizen. |
-| `commit-check` | Validate an existing commit message. |
+| `commit-check` | Validate a commit message. |
+| `clean` | Remove run directories, caches, and build output. The virtual environment is kept. |
 
-Individual quality tasks are useful for quick feedback, but `quality` is the
+Individual recipes are useful for quick feedback, but `checks` is the
 authoritative final result.
 
 ## Quality gate coverage
@@ -94,22 +117,31 @@ authoritative final result.
 | Vulture | Yes | Yes | Dead-code checks use 100% confidence. |
 | Bandit | Yes | No | Production security findings fail the gate. |
 | Pytest and Coverage | Produces coverage | Executes tests | Production line and branch coverage must each reach 100%. |
+| Secrets jig (`leak-scan`) | Yes | Yes | Run through bolt over the whole repository; the verdict is read from bolt's `result.yaml`, never its exit status. |
 
 Quality thresholds apply to each finding, function, or file as appropriate.
 Scores must not be averaged across a file to hide a local failure.
 
 ## Pre-commit and commits
 
-`.pre-commit-config.yaml` installs two hook types:
+`.pre-commit-config.yaml` installs two hook types, and each calls a `just`
+recipe and nothing else:
 
-- `pre-commit` delegates the complete validation to `uv run poe quality`.
-- `commit-msg` delegates message validation to Commitizen.
+- `pre-commit` runs `uv run just checks`, so a commit runs exactly the gate that
+  runs by hand.
+- `commit-msg` runs `uv run just commit-check`, which validates the message with
+  Commitizen.
 
 All commit messages must follow Conventional Commits. The normal workflow is:
 
 ```console
-uv run poe commit
+uv run just commit
 ```
+
+`pre-commit` refuses to install on a machine where git's `core.hooksPath` is set
+globally, because git then reads no repository's `.git/hooks`. The Dev Container
+does not set it, so the hooks install and run there. How the hook is wired on
+such machines is an open estate-wide question.
 
 Bypassing a local hook does not waive a requirement. The same checks must run
 in automation when continuous integration is added.
@@ -135,8 +167,8 @@ When adding or changing behavior:
 2. Implement the behavior using the functional boundary-composition standard
    when a genuine seam is required.
 3. Add tests with complete requirement metadata.
-4. Run `uv run poe quality`.
-5. Confirm that `uv run poe requirements` reports every active requirement,
+4. Run `uv run just checks`.
+5. Confirm that `uv run just requirements` reports every active requirement,
    required test classification, and declared functionality as covered.
 
 The checker and its stable finding codes are documented in
@@ -209,11 +241,11 @@ enforcement commands.
 ### The lockfile is stale
 
 Run `uv lock`, review the dependency changes, then rerun `uv sync --frozen` and
-`uv run poe quality`.
+`uv run just checks`.
 
 ### Hooks are missing
 
-Run `uv run poe hooks`. Hook installation requires a functional Git repository.
+Run `uv run just hooks`. Hook installation requires a functional Git repository.
 
 ### A quality tool needs a cache directory
 
@@ -230,5 +262,5 @@ declaration. Record the approved exception and expiry in `SUPPRESSIONS.md`.
 ### The host behaves differently from the container
 
 Treat the digest-pinned Dev Container as the reference. Rebuild it and run
-`uv run poe quality` inside it. Differences that remain must be resolved in the
+`uv run just checks` inside it. Differences that remain must be resolved in the
 checked-in project configuration rather than through undocumented host setup.

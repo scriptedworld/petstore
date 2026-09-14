@@ -11,9 +11,13 @@ The standard pattern for testable I/O and difficult exception boundaries is in
 
 ```console
 uv sync
-uv run poe hooks
-uv run poe quality
+uv run just hooks
+uv run just checks
 ```
+
+`just` is the only task interface. `uv run just` uses the version pinned in
+`uv.lock`, so nothing needs installing system-wide; where `just` is already
+installed, `just checks` is the same command. `just --list` shows every recipe.
 
 ### Dev Container
 
@@ -26,7 +30,7 @@ The container persists UV's download cache in a named volume and configures the
 Python, Ruff, Mypy, and Pytest editor integrations. After creation, run:
 
 ```console
-uv run poe quality
+uv run just checks
 ```
 
 ## Lazy zip
@@ -172,37 +176,46 @@ directory exists. POSIX only.
 
 ## Quality gates
 
-Install the development tools and run the standard project gate through UV:
+Install the development tools and run the whole gate:
 
 ```console
 uv sync
-uv run poe quality
+uv run just checks
 ```
 
-`quality` runs formatting checks, Ruff, Mypy, Pylint, Complexipy, Interrogate,
-Vulture, Bandit, mechanical requirement traceability, and Pytest in sequence.
-Use `uv run poe fix` to format code and apply safe Ruff fixes. Every individual
-gate is also available as a Poe task; run `uv run poe --help` to list them.
+`checks` runs formatting checks, Ruff, Mypy, Pylint, Complexipy, Interrogate,
+Vulture, Bandit, mechanical requirement traceability, Pytest with enforced
+coverage, and the estate's secrets scan, cheapest first, stopping at the first
+failure. Each gate is also a recipe of its own, such as `just typecheck` or
+`just requirements`. `just test` runs the suite without coverage for a fast inner
+loop, and `just fix` formats code and applies safe Ruff fixes.
+
+The recipe names follow the estate's shared Justfile interface: `just/base.just`
+is linked from toolbox and supplies the ten standard recipes, and
+`just/project.just` holds petstore's own, which take precedence.
 
 ## Commits
 
 Install both the quality and commit-message hooks after cloning:
 
 ```console
-uv run poe hooks
+uv run just hooks
 ```
 
 Create commits through Commitizen:
 
 ```console
-uv run poe commit
+uv run just commit
 ```
 
-Every commit message must follow Conventional Commits. The `pre-commit` hook
-delegates the complete source check to `poe quality`, keeping the quality-gate
-definition in one place. The `commit-msg` hook delegates validation to the Poe
-`commit-check` task and rejects non-conforming messages. Run all file-oriented
-hooks manually with `uv run poe hooks-run`.
+Every commit message must follow Conventional Commits. Both hooks call `just`
+recipes and nothing else: `pre-commit` runs `just checks`, so a commit runs
+exactly the gate that runs by hand, and `commit-msg` runs `just commit-check`,
+which rejects a non-conforming message. Run all file-oriented hooks manually
+with `uv run just hooks-run`.
+
+`just hooks` refuses on a machine where git's `core.hooksPath` is set globally,
+because git then reads no repository's hooks. It works in the Dev Container.
 
 Pytest enforces 100% line and branch coverage and prints coverage for every
 source file. Pylint permits no findings and does not calculate an averaged
