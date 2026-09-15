@@ -20,4 +20,4 @@ or replaced when recording a real decision.
 
 | Location | Mechanism | Reason allowed | Approved by | Approval date | Expiry date | Removal condition |
 | --- | --- | --- | --- | --- | --- | --- |
-| `tests/example_test.py::test_example` | `example.patch.target` | Example justification-not an approved mock. | `EXAMPLE ONLY` | `YYYY-MM-DD` | `YYYY-MM-DD` | Example removal condition. |
+| `tests/example_test.py::test_example` | `example.patch.target` | Example justification, not an approved mock. | `EXAMPLE ONLY` | `YYYY-MM-DD` | `YYYY-MM-DD` | Example removal condition. |

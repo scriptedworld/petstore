@@ -74,7 +74,7 @@ without a preceding link, and any link added after it, raise `ValueError`,
 since that later link could never be reached.
 
 Every invocation is captured as a `CallEvent` holding the positional arguments,
-the keyword arguments, and, when a signature was declared, the arguments bound
+the keyword arguments and (when a signature was declared) the arguments bound
 to their parameter names:
 
 ```python

@@ -7,9 +7,9 @@ A rule is an ordinary function: value in, raise on problem, return nothing.
             message = "must be positive"
             raise ValidationError(message)
 
-``Validated`` holds every mechanical concern -- storage, the write that works on
+``Validated`` holds every mechanical concern (storage, the write that works on
 frozen instances, the attribute name, and decorating a failure with the field's
-label -- so a rule never has to know any of it. An attribute then becomes a
+label), so a rule never has to know any of it. An attribute then becomes a
 declaration rather than a method:
 
     RULES = Validated(positive)
@@ -50,7 +50,7 @@ class Validated(Generic[T]):
     """Run rules against a value, then store it on the owning instance.
 
     A descriptor lives on the class and is shared by every instance, so nothing
-    per-instance is kept here -- only the rules and the label, both fixed when
+    per-instance is kept here: only the rules and the label, both fixed when
     the owning class body is executed. The value itself is stored on the
     instance under a private name derived from the attribute name.
     """

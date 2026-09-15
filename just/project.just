@@ -4,13 +4,13 @@
 # runner. Where a recipe does something among the estate's ten, it takes that
 # name, so the whole gate is `checks` here as it is everywhere.
 #
-# EVERY RECIPE RUNS THROUGH uv. petstore's tools are pinned in uv.lock, and a
+# Every recipe runs through uv. petstore's tools are pinned in uv.lock, and a
 # bare `mypy` or `pytest` from PATH is a different version against a different
 # interpreter. The one exception is `leak-scan`, which base.just supplies and
 # which runs bolt, invoking the secrets checkers from PATH by design.
 #
-# THE ORDER IN `checks` IS CHEAPEST FIRST, so a formatting slip fails in a
-# second rather than after the whole suite. just stops at the first failing
+# The order in `checks` is cheapest first, so a formatting slip fails in a
+# second, not after the whole suite. just stops at the first failing
 # line, so the first failure is the one reported.
 
 # everything: formatting, lint, types, analysis, traceability, coverage, secrets
@@ -27,7 +27,7 @@ checks:
     @just coverage
     @just leak-scan
 
-# THE SUITE WITHOUT COVERAGE. pyproject's pytest options always measure and
+# `test` is the suite without coverage. pyproject's pytest options always measure and
 # enforce coverage, so `test` switches that off to be the fast inner loop, and
 # `coverage` is the run that holds the 100% line and branch minimum.
 
@@ -92,11 +92,12 @@ requirements:
 dist:
     uv build
 
-# REFUSES ON A MACHINE WITH A GLOBAL core.hooksPath, including the one this was
-# written on: git reads no .git/hooks there, and pre-commit will not install
-# into a directory git ignores. It works in the devcontainer and anywhere else
-# core.hooksPath is unset. How the hook is wired estate-wide is silo's open
-# question, filed at the task tracker.
+# `hooks` refuses on any machine with a global core.hooksPath, including the
+# development host: git reads no .git/hooks there, and pre-commit will not
+# install into a directory git ignores. It works in the devcontainer and
+# anywhere else core.hooksPath is unset. How the hook is wired across every
+# repository is an open question, filed at
+# the task tracker.
 
 # install the pre-commit and commit-msg hooks
 hooks:
@@ -114,7 +115,7 @@ commit:
 commit-check *args:
     uv run cz check {{ args }}
 
-# CLEAN REMOVES ONLY WHAT NOTHING EXECUTES. The virtual environment is left,
+# `clean` removes only what nothing executes. The virtual environment is left,
 # because tools run from it, and base.just's reason for the rule applies here.
 
 # remove run directories and build output

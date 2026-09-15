@@ -2,8 +2,8 @@
 
 PetStore is a UV-managed collection of small Python tools for development work.
 
-The canonical development, quality, commit, traceability, and troubleshooting
-instructions are in [`docs/tooling-and-runbook.md`](docs/tooling-and-runbook.md).
+Development, quality, commit, traceability, and troubleshooting instructions
+are in [`docs/tooling-and-runbook.md`](docs/tooling-and-runbook.md).
 The standard pattern for testable I/O and difficult exception boundaries is in
 [`docs/architecture/function-boundaries.md`](docs/architecture/function-boundaries.md).
 
@@ -35,9 +35,9 @@ uv run just checks
 
 ## Lazy zip
 
-Module documentation and its identified requirements are maintained in
-[`docs/modules/iteration.md`](docs/modules/iteration.md), with the canonical
-requirement registry in
+The module guide is
+[`docs/modules/iteration.md`](docs/modules/iteration.md), and its requirements
+are registered in
 [`docs/modules/iteration.requirements.yaml`](docs/modules/iteration.requirements.yaml).
 
 `petstore.zip_iter` combines iterables lazily and supports four termination
@@ -78,9 +78,9 @@ result is single-pass and does not cache input values.
 
 ## Validated attributes
 
-Module documentation and its identified requirements are maintained in
-[`docs/modules/validation.md`](docs/modules/validation.md), with the canonical
-requirement registry in
+The module guide is
+[`docs/modules/validation.md`](docs/modules/validation.md), and its requirements
+are registered in
 [`docs/modules/validation.requirements.yaml`](docs/modules/validation.requirements.yaml).
 
 `petstore.Validated` checks a value at the moment it is assigned, so a
@@ -119,9 +119,9 @@ and works on frozen dataclasses, which reject ordinary attribute assignment.
 
 ## Scripted test doubles
 
-Module documentation and its identified requirements are maintained in
-[`docs/modules/stubs.md`](docs/modules/stubs.md), with the canonical requirement
-registry in
+The module guide is
+[`docs/modules/stubs.md`](docs/modules/stubs.md), and its requirements are
+registered in
 [`docs/modules/stubs.requirements.yaml`](docs/modules/stubs.requirements.yaml).
 
 `petstore.Stub` builds a callable whose successive outcomes are declared in
@@ -151,9 +151,9 @@ bound to their parameter names through `calls[n].bound_arguments`.
 
 ## Path locks
 
-Module documentation and its identified requirements are maintained in
-[`docs/modules/locking.md`](docs/modules/locking.md), with the canonical
-requirement registry in
+The module guide is
+[`docs/modules/locking.md`](docs/modules/locking.md), and its requirements are
+registered in
 [`docs/modules/locking.requirements.yaml`](docs/modules/locking.requirements.yaml).
 
 `petstore.locked` holds an exclusive lock named for a path, honored across

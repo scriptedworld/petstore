@@ -9,8 +9,8 @@ Public API: `petstore.locked`, `petstore.make_locked`, `petstore.LockError`,
 ## Purpose
 
 This module provides an exclusive lock named for a filesystem path and honored
-across processes. It serializes work that concerns one location, a socket, a
-file being rewritten, a directory being rebuilt, among independent processes
+across processes. It serializes work that concerns one location (a socket, a
+file being rewritten, a directory being rebuilt) among independent processes
 that agree on the path, without those processes sharing anything else.
 
 ## Usage

@@ -6,8 +6,8 @@
         ...  # no other process holding a lock on that path runs this concurrently
 
 The lock is an advisory ``flock`` on a lock file named for the path, not on the
-path itself. The path does not need to exist and can name anything -- a file, a
-socket, a directory -- and locking never interferes with other users of the
+path itself. The path does not need to exist and can name anything (a file, a
+socket, a directory), and locking never interferes with other users of the
 thing it names. Paths are resolved first, so different spellings of one location
 share a lock, symlinks included.
 
