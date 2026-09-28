@@ -6,8 +6,13 @@ repository. What it waits on:
 - A `proc` subprocess module lands before publishing. Its bandit findings are
   put to me before any suppression is written.
 - Requirements move from the per-module YAML registries to
-  `docs/REQUIREMENTS/<category>/<requirement>.md`. What checks them afterwards
-  is not settled.
+  `docs/REQUIREMENTS/<category>/<requirement>.md`, checked by toolbox's
+  `common-quality` jig. `petstore.traceability`, `petstore.tool_output` and
+  `petstore-requirements` retire with them, since toolbox checks traceability
+  and wrench owns the result envelope.
+- Then `just checks` runs only bolt jigs (`python-std-quality` and
+  `common-quality`) from a toolbox checkout, so every step reports a wrench
+  envelope. The jigs' thresholds replace petstore's stricter ones.
 - `Stub` is trimmed to what reaches a failure, from a proposal I have not seen
   yet.
 
