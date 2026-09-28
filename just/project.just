@@ -92,6 +92,19 @@ requirements:
 dist:
     uv build
 
+# base.just and bolt.secrets.yaml are toolbox's, committed here so a clone runs
+# every recipe with nothing beside it. `vendor` replaces both with toolbox's
+# main branch on GitHub; `git diff` then shows what changed upstream. Each is
+# fetched to a temporary name and moved into place, so a half-written download
+# never replaces a working file.
+
+# refresh the files taken from toolbox, from its main branch
+vendor:
+    curl -fsSL -o just/base.just.tmp https://raw.githubusercontent.com/scriptedworld/toolbox/main/just/base.just
+    mv just/base.just.tmp just/base.just
+    curl -fsSL -o bolt.secrets.yaml.tmp https://raw.githubusercontent.com/scriptedworld/toolbox/main/bolt.secrets.yaml
+    mv bolt.secrets.yaml.tmp bolt.secrets.yaml
+
 # `hooks` refuses on any machine with a global core.hooksPath, including the
 # development host: git reads no .git/hooks there, and pre-commit will not
 # install into a directory git ignores. It works in the devcontainer and

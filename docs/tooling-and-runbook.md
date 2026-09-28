@@ -73,11 +73,16 @@ wins:
 | --- | --- | --- |
 | `Justfile` | Estate standard | Imports only, plus `default`. Identical in every project. |
 | `just/project.just` | This repository | petstore's own recipes, which override the base. |
-| `just/base.just` | toolbox, linked | The ten standard recipes, each a working default or a no-op that succeeds. |
+| `just/base.just` | toolbox, vendored | The ten standard recipes, each a working default or a no-op that succeeds. |
 
-`just/base.just` and `bolt.secrets.yaml` are symlinks into the toolbox
-repository, created by `toolbox/bin/link-toolbox.py` with the `base` and
-`secrets` sets. Edit neither here; they are toolbox's.
+`just/base.just` and `bolt.secrets.yaml` are copies of
+[toolbox](https://github.com/scriptedworld/toolbox)'s, committed so a clone
+needs nothing beside it. Edit neither here. `just vendor` replaces both with
+toolbox's `main`, and `git diff` shows what changed upstream.
+
+`leak-scan` runs the secrets jig through
+[bolt](https://github.com/scriptedworld/bolt), with `gitleaks` and
+`detect-secrets` on `PATH`. bolt's `docs/runbook.md` says how to build it.
 
 List every recipe:
 
@@ -100,6 +105,7 @@ Frequently used recipes:
 | `commit` | Create a Conventional Commit through Commitizen. |
 | `commit-check` | Validate a commit message. |
 | `clean` | Remove run directories, caches, and build output. The virtual environment is kept. |
+| `vendor` | Replace the files taken from toolbox with its `main` branch. |
 
 Individual recipes are useful for quick feedback, but `checks` is the
 authoritative final result.

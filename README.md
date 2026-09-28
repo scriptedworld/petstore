@@ -190,9 +190,11 @@ failure. Each gate is also a recipe of its own, such as `just typecheck` or
 `just requirements`. `just test` runs the suite without coverage for a fast inner
 loop, and `just fix` formats code and applies safe Ruff fixes.
 
-The recipe names follow the estate's shared Justfile interface: `just/base.just`
-is linked from toolbox and supplies the ten standard recipes, and
-`just/project.just` holds petstore's own, which take precedence.
+The recipe names follow a shared Justfile interface: `just/base.just` is a copy
+of [toolbox](https://github.com/scriptedworld/toolbox)'s and supplies the ten
+standard recipes, and `just/project.just` holds petstore's own, which take
+precedence. The secrets scan needs [bolt](https://github.com/scriptedworld/bolt),
+`gitleaks` and `detect-secrets` on `PATH`.
 
 ## Commits
 
