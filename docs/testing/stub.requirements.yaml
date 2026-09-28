@@ -1,7 +1,7 @@
 schema_version: 1
-module: tests.conftest.generate
+module: petstore.stubs.generate
 id_prefix: PS-TEST
-next_id: 13
+next_id: 14
 
 requirements:
   - id: PS-TEST-001
@@ -98,8 +98,14 @@ requirements:
 
   - id: PS-TEST-006
     title: Generated return behavior
-    status: active
+    status: retired
     introduced: 0.1.0
+    retired: "2026-09-28"
+    superseded_by:
+      - PS-TEST-013
+    retirement_reason: >-
+      generate moved into petstore.stubs and now builds a Stub, so it returns
+      a typed Stub rather than a plain function object.
     statement: >-
       generate(returns=value) shall return an ordinary function object that
       accepts arbitrary positional and keyword arguments and returns the
@@ -193,3 +199,16 @@ requirements:
     required_test_types:
       - positive
       - negative
+
+  - id: PS-TEST-013
+    title: Generated return behavior as a stub
+    status: active
+    introduced: 0.1.0
+    statement: >-
+      generate(returns=value) shall return a Stub that accepts arbitrary
+      positional and keyword arguments and returns the configured value on
+      every call.
+    functionality:
+      - generate.return_behavior
+    required_test_types:
+      - positive

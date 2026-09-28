@@ -89,6 +89,15 @@ A signature may be given as parameter names or copied from a real callable with
 `Stub(some_function)`. The two sources are mutually exclusive. Without one, the
 stub accepts any arguments and records no binding.
 
+A stub built from a callable also takes its types. `Stub(read_text)` type-checks
+wherever `read_text` would, and `Stub(read_text).returns(42)` is a type error
+when `read_text` returns `str`. Pass the real boundary function whenever there
+is one: the stub then rejects bad calls at runtime and bad scripts statically.
+A stub built without a callable accepts any arguments and returns `Any`.
+
+For a seam that does the same thing on every call,
+[`generate`](../testing/stub.md) is the short form.
+
 ## Canonical requirements
 
 [`stubs.requirements.yaml`](stubs.requirements.yaml) is the sole normative

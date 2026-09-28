@@ -1,10 +1,15 @@
-# Generated seam functions
+# One-behavior stubs
 
-`tests.conftest.generate` is the standard functional test substitute for an
-injected seam. It returns an ordinary function object; it does not patch or
-replace a runtime object and is therefore not a mock.
+`petstore.generate` is the short form of [`petstore.Stub`](../modules/stubs.md)
+for a seam that does the same thing on every call. It builds a stub whose
+script is one repeating link, so it carries the same call history and the same
+typing. It is passed through a seam the code declares, so it does not patch or
+replace a runtime object and is not a mock.
 
-Generated functions are intended for the implementation layer described by the
+Reach for `Stub` directly when successive calls need to differ, such as a
+write that fails twice and then succeeds.
+
+Generated stubs are intended for the implementation layer described by the
 [`functional boundary-composition standard`](../architecture/function-boundaries.md)
 or as entries in a test function policy.
 
@@ -39,12 +44,12 @@ assert dict(read.calls[0].kwargs) == {}
 Every valid invocation is recorded before its return, raise, or yield behavior
 occurs. `calls` is an immutable tuple of `CallEvent` records; each record
 contains positional `args`, read-only `kwargs`, and optional read-only
-`bound_arguments`. Generate a new function whenever a test needs empty call
+`bound_arguments`. Generate a new stub whenever a test needs empty call
 history.
 
 ## Optional call signatures
 
-The default generated function accepts arbitrary arguments. A test can instead
+A generated stub accepts arbitrary arguments by default. A test can instead
 declare ordered positional-or-keyword parameter names:
 
 ```python

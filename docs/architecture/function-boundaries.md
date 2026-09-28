@@ -109,18 +109,72 @@ decompose logic are not seams unless the consumer can replace them.
 
 ## Testing standard
 
-Behavioral tests call the implementation function and pass generated functions
-as its strategies:
+Behavioral tests call the implementation function and pass a `petstore.Stub`
+for each strategy:
 
 ```python
 def test_load_config_reads_the_requested_path() -> None:
-    reader = generate(returns='{"enabled": true}')
+    reader = Stub(_read_text).returns('{"enabled": true}')
 
     result = _load_config(Path("config.yaml"), reader=reader)
 
     assert result.enabled
     assert reader.calls[0].args == (Path("config.yaml"),)
 ```
+
+### A failure the machine will not produce on demand
+
+A full disk is the standard case. A test cannot fill a real filesystem safely,
+so the write goes behind a strategy and the test hands in one that fails:
+
+```python
+import errno
+from enum import Enum
+
+Writer = Callable[[Path, str], None]
+
+
+class Saved(Enum):
+    """Outcome of saving a report."""
+
+    OK = "ok"
+    DISK_FULL = "disk full"
+
+
+def _write_text(path: Path, text: str) -> None:
+    """Write text at the filesystem boundary."""
+    path.write_text(text)
+
+
+def _save_report(path: Path, text: str, *, writer: Writer) -> Saved:
+    """Save a report, turning a full disk into an outcome."""
+    try:
+        writer(path, text)
+    except OSError as error:
+        if error.errno != errno.ENOSPC:
+            raise
+        return Saved.DISK_FULL
+    return Saved.OK
+```
+
+```python
+def test_a_full_disk_is_an_outcome_not_a_crash() -> None:
+    writer = Stub(_write_text).raises(OSError(errno.ENOSPC, "No space left on device"))
+
+    assert _save_report(Path("report.txt"), "body", writer=writer) is Saved.DISK_FULL
+    assert writer.call_count == 1
+
+
+def test_any_other_write_failure_still_raises() -> None:
+    writer = Stub(_write_text).raises(OSError(errno.EACCES, "Permission denied"))
+
+    with pytest.raises(OSError, match="Permission denied"):
+        _save_report(Path("report.txt"), "body", writer=writer)
+```
+
+Nothing is patched. `_save_report` declares that it takes a writer, and the
+test passes one, exactly as its composition factory passes `_write_text` in
+production.
 
 Validation, positive, negative, edge, property, and invariant cases belong to
 the implementation tests. They carry the requirement IDs and functionality of
@@ -137,9 +191,10 @@ test must therefore invoke the returned function at least once. Boundary
 wrappers containing production code require their own appropriately scoped
 integration tests.
 
-Tests use `tests.conftest.generate` for deterministic return, raise, or yield
-behavior. Generate a new function for each independent history; do not patch
-runtime objects and do not add reset or reconfiguration behavior.
+Tests use `petstore.Stub` for deterministic return, raise, or yield behavior,
+passing the boundary function so the stub rejects calls the real one would.
+Build a new stub for each independent history. A stub is an argument the code
+declares, so nothing at runtime is patched and nothing needs resetting.
 
 ## Adoption checklist
 
@@ -152,4 +207,4 @@ runtime objects and do not add reset or reconfiguration behavior.
 - Export the default composed callable with a clean operational signature.
 - Test behavior through the implementation and wiring through the factory.
 - Record requirement IDs and test classifications on both kinds of tests.
-- Use generated functions rather than mocks or runtime patching.
+- Use `petstore.Stub` rather than mocks or runtime patching.

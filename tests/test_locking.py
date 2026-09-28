@@ -24,7 +24,7 @@ FREE = True
 HELD = False
 
 
-def _stubs(**overrides: Stub) -> dict[str, Stub]:
+def _stubs(**overrides: Stub[..., Any]) -> dict[str, Stub[..., Any]]:
     """Return a scripted stub for every lock boundary, replacing the named ones."""
     defaults = {
         "runtime_dir": Stub().returns(RUNTIME_DIR).always(),
@@ -38,11 +38,9 @@ def _stubs(**overrides: Stub) -> dict[str, Stub]:
     return defaults | overrides
 
 
-def _policy(stubs: dict[str, Stub]) -> LockPolicy:
+def _policy(stubs: dict[str, Stub[..., Any]]) -> LockPolicy:
     """Assemble a lock policy from scripted boundary stubs."""
-    # A Stub returns object, so the policy's precise callable types are asserted here.
-    boundaries: dict[str, Any] = dict(stubs)
-    return LockPolicy(**boundaries)
+    return LockPolicy(**stubs)
 
 
 def _enter(manager: AbstractContextManager[None]) -> None:
@@ -51,7 +49,7 @@ def _enter(manager: AbstractContextManager[None]) -> None:
         pass
 
 
-def _opened_lock_file(stubs: dict[str, Stub]) -> Path:
+def _opened_lock_file(stubs: dict[str, Stub[..., Any]]) -> Path:
     """Return the lock file the first acquisition asked to open."""
     bound = stubs["open_lock"].calls[0].bound_arguments
     assert bound is not None

@@ -1,13 +1,12 @@
-"""Tests for generated seam functions."""
+"""Tests for generate, the one-behavior form of Stub."""
 
 from __future__ import annotations
 
-from inspect import isfunction
 from typing import TYPE_CHECKING, cast
 
 import pytest
 
-from tests.conftest import generate
+from petstore import Stub, generate
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -19,7 +18,7 @@ def _invoke_without_arguments(operation: Callable[[], object]) -> object:
 
 
 @pytest.mark.requirement(
-    "PS-TEST-006",
+    "PS-TEST-013",
     "PS-TEST-012",
     functionality=("generate.return_behavior", "generate.call_history"),
     test_type="positive",
@@ -35,7 +34,7 @@ def test_generate_returns_value_and_records_unbounded_calls() -> None:
     first_result = generated(1, name="first")
     second_result = generated(2, name="second")
 
-    assert isfunction(generated)
+    assert isinstance(generated, Stub)
     assert first_result == "result"
     assert second_result == "result"
     assert generated.call_count == expected_call_count

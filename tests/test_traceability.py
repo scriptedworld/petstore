@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 import yaml
 
+from petstore import generate
 from petstore.tool_output import ResultEnvelope
 from petstore.tool_output import result as make_result
 from petstore.traceability import (
@@ -23,7 +24,6 @@ from petstore.traceability import (
     parse_test_module,
 )
 from petstore.traceability import TestEvidence as CollectedTestEvidence
-from tests.conftest import generate
 
 VALID_REGISTRY = """\
 schema_version: 1

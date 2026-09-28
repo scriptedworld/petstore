@@ -52,14 +52,20 @@ from dataclasses import dataclass
 from datetime import timedelta
 from inspect import Parameter, Signature, signature
 from types import MappingProxyType
-from typing import TYPE_CHECKING, NamedTuple, NoReturn, cast
+from typing import TYPE_CHECKING, Any, Generic, NamedTuple, NoReturn, ParamSpec, TypeVar, cast, overload
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator
 
-__all__ = ["CallEvent", "Stub", "StubExhaustedError", "make_signature"]
+__all__ = ["CallEvent", "Stub", "StubExhaustedError", "generate", "make_signature"]
 
 ExceptionSpec = BaseException | type[BaseException]
+
+P = ParamSpec("P")
+R = TypeVar("R")
+ReturnT = TypeVar("ReturnT")
+YieldT = TypeVar("YieldT")
+_UNSET = object()
 
 # One generator step: whether to delegate to an iterable, and what to produce.
 _Step = tuple[bool, object]
@@ -149,8 +155,33 @@ def make_signature(
     return Signature(declared)
 
 
-class Stub:
-    """A callable whose successive outcomes are scripted one link at a time."""
+class Stub(Generic[P, R]):
+    """A callable whose successive outcomes are scripted one link at a time.
+
+    Built from a callable, the stub takes that callable's parameter and return
+    types, so it type-checks wherever the callable would and a scripted return
+    value of the wrong type is a type error. Built without one, it accepts any
+    arguments and returns ``Any``.
+    """
+
+    @overload
+    def __init__(
+        self,
+        signature_from: Callable[P, R],
+        *,
+        name: str = "stub",
+        clock: Callable[[], float] = time.monotonic,
+    ) -> None: ...
+
+    @overload
+    def __init__(
+        self: Stub[..., Any],
+        signature_from: Callable[..., object] | None = None,
+        *,
+        parameters: Iterable[str] | None = None,
+        name: str = "stub",
+        clock: Callable[[], float] = time.monotonic,
+    ) -> None: ...
 
     def __init__(
         self,
@@ -188,29 +219,29 @@ class Stub:
         """How many times this stub has been invoked."""
         return len(self._history)
 
-    def returns(self, value: object) -> Stub:
+    def returns(self, value: R) -> Stub[P, R]:
         """Add a call that returns *value*, closing any open generator link."""
         self._append(lambda: value)
         self._open_steps = None
         return self
 
-    def raises(self, exception: ExceptionSpec) -> Stub:
+    def raises(self, exception: ExceptionSpec) -> Stub[P, R]:
         """Add a call that raises *exception*, an instance or a zero-argument type."""
         self._append(lambda: _raise(exception))
         self._open_steps = None
         return self
 
-    def yields(self, value: object) -> Stub:
+    def yields(self, value: object) -> Stub[P, R]:
         """Produce *value* from the current generator link, as ``yield value`` does."""
         self._steps().append((False, value))
         return self
 
-    def yields_from(self, values: Iterable[object]) -> Stub:
+    def yields_from(self, values: Iterable[object]) -> Stub[P, R]:
         """Delegate to *values* from the current link, as ``yield from values`` does."""
         self._steps().append((True, values))
         return self
 
-    def times(self, count: int) -> Stub:
+    def times(self, count: int) -> Stub[P, R]:
         """Make the most recent link cover *count* consecutive calls.
 
         Raises:
@@ -224,7 +255,7 @@ class Stub:
         self._modify_last("times").calls = count
         return self
 
-    def over(self, *, hours: float = 0, minutes: float = 0, seconds: float = 0) -> Stub:
+    def over(self, *, hours: float = 0, minutes: float = 0, seconds: float = 0) -> Stub[P, R]:
         """Make the most recent link cover every call within a time window.
 
         The window opens at the first call that reaches the link.
@@ -243,7 +274,7 @@ class Stub:
         link.seconds = duration
         return self
 
-    def always(self) -> Stub:
+    def always(self) -> Stub[P, R]:
         """Make the most recent link cover this and every later call.
 
         Raises:
@@ -288,7 +319,7 @@ class Stub:
             return playback.started is None or now - playback.started < link.seconds
         return link.calls is None or playback.served < link.calls
 
-    def __call__(self, *args: object, **kwargs: object) -> object:
+    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R:
         """Record this invocation, then perform the outcome scripted for it."""
         bound = None
         if self._signature is not None:
@@ -304,4 +335,74 @@ class Stub:
         if playback.started is None:
             playback.started = now
         playback.served += 1
-        return self._links[playback.link].outcome()
+        return cast("R", self._links[playback.link].outcome())
+
+
+@overload
+def generate(
+    *,
+    returns: ReturnT,
+    parameters: Iterable[str] | None = None,
+    signature_from: Callable[..., object] | None = None,
+) -> Stub[..., ReturnT]: ...
+
+
+@overload
+def generate(
+    *,
+    raises: ExceptionSpec,
+    parameters: Iterable[str] | None = None,
+    signature_from: Callable[..., object] | None = None,
+) -> Stub[..., NoReturn]: ...
+
+
+@overload
+def generate(
+    *,
+    yields: Iterable[YieldT],
+    parameters: Iterable[str] | None = None,
+    signature_from: Callable[..., object] | None = None,
+) -> Stub[..., Iterator[YieldT]]: ...
+
+
+def generate(
+    *,
+    returns: object = _UNSET,
+    raises: object = _UNSET,
+    yields: object = _UNSET,
+    parameters: Iterable[str] | None = None,
+    signature_from: Callable[..., object] | None = None,
+) -> Stub[..., Any]:
+    """Build a stub that does one thing on every call.
+
+    The short form of a stub whose script is a single ``always()`` link: it
+    returns *returns*, raises *raises*, or yields a fresh iterator over a
+    snapshot of *yields*, however many times it is called.
+
+    Args:
+        returns: The value every call returns.
+        raises: The exception every call raises, an instance or a
+            zero-argument type.
+        yields: Values snapshotted now and produced by every call's iterator.
+        parameters: Accept exactly these positional-or-keyword names.
+        signature_from: Copy the accepted signature from this callable.
+
+    Returns:
+        The configured stub.
+
+    Raises:
+        ValueError: If not exactly one of returns, raises, or yields is
+            given, or if both signature sources are given.
+
+    """
+    if sum(behavior is not _UNSET for behavior in (returns, raises, yields)) != 1:
+        message = "generate requires exactly one of returns, raises, or yields"
+        raise ValueError(message)
+    stub: Stub[..., Any] = Stub(signature_from, parameters=parameters, name="generated")
+    if raises is not _UNSET:
+        stub.raises(cast("ExceptionSpec", raises))
+    elif yields is not _UNSET:
+        stub.yields_from(tuple(cast("Iterable[object]", yields)))
+    else:
+        stub.returns(returns)
+    return stub.always()

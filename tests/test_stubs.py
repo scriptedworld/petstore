@@ -3,10 +3,14 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
+from typing import TYPE_CHECKING
 
 import pytest
 
 from petstore.stubs import Stub, StubExhaustedError
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 
 def example(path: str, *, retries: int = 0) -> None:
@@ -164,6 +168,25 @@ def test_a_declared_signature_binds_arguments_to_names() -> None:
 
     assert named.calls[0].bound_arguments == {"path": "alpha"}
     assert copied.calls[0].bound_arguments == {"path": "beta", "retries": 3}
+
+
+@pytest.mark.requirement(
+    "PS-STUB-012",
+    functionality="stub.typed",
+    test_type="positive",
+)
+def test_a_stub_built_from_a_callable_stands_in_where_it_is_typed() -> None:
+    """Verify a stub takes its callable's types, so a typed seam accepts it.
+
+    The assignment is the assertion that matters: the gate's type checker
+    rejects it unless the stub carries example's parameter and return types.
+    """
+    stub = Stub(example).returns(None)
+    seam: Callable[[str], None] = stub
+
+    seam("gamma")
+
+    assert stub.calls[0].bound_arguments == {"path": "gamma"}
 
 
 @pytest.mark.requirement(

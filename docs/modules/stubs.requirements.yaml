@@ -1,7 +1,7 @@
 schema_version: 1
 module: petstore.stubs
 id_prefix: PS-STUB
-next_id: 12
+next_id: 13
 
 requirements:
   - id: PS-STUB-001
@@ -175,3 +175,17 @@ requirements:
       - positive
       - negative
       - edge
+
+  - id: PS-STUB-012
+    title: Typed from its callable
+    status: active
+    introduced: 0.1.0
+    statement: >-
+      A stub built from a callable shall carry that callable's parameter and
+      return types, so a type checker accepts it wherever the callable is
+      accepted and rejects a scripted return value of another type. A stub
+      built without a callable shall accept any arguments and return Any.
+    functionality:
+      - stub.typed
+    required_test_types:
+      - positive
