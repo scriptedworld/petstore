@@ -201,17 +201,16 @@ cohesive group of related boundary functions that normally varies together. A
 policy is an immutable typed bag of functions, not a service container. Pure
 logic and directly inducible failures do not receive seams.
 
-The project currently uses no mocks or runtime patching. `MOCKS.md` contains an
-empty approved ledger and a clearly non-operative example of the required
-format. Mocks must not be added speculatively; a real entry requires explicit
-human approval, exact usage details, a reason, an expiry date, and a removal
-condition.
+The project uses no mocks or runtime patching. One approved by me before it is
+written gets a file of its own in `docs/MOCKS/`, giving its exact location and
+mechanism, the reason, an expiry date and a removal condition. The directory
+exists only once there is an entry.
 
 ## Suppressions and safety findings
 
-`SUPPRESSIONS.md` is the only project-wide suppression ledger. An inline
-`# noqa` or `# nosec`, tool configuration exception, or accepted safety finding
-requires prior human approval and a ledger entry containing:
+An inline `# noqa` or `# nosec`, a tool configuration exception, or an accepted
+safety finding is approved by me before it is added, and gets a file of its own
+in `docs/SUPPRESSIONS/` containing:
 
 - scope, tool, and exact rule;
 - the reason it is safe and was allowed;
@@ -255,9 +254,9 @@ unavailable host home directory.
 
 ### A finding appears incorrect
 
-Fix or restructure the code first. If suppression is genuinely necessary, stop
-and obtain human approval before changing configuration or adding an inline
-declaration. Record the approved exception and expiry in `SUPPRESSIONS.md`.
+Fix or restructure the code first. Where a suppression is genuinely necessary,
+ask me before changing configuration or adding an inline declaration, then
+record the approved exception and its expiry in `docs/SUPPRESSIONS/`.
 
 ### The host behaves differently from the container
 

@@ -225,8 +225,6 @@ ceiling of 15. Source lines may be up to 150 characters. Complexity, typing,
 lint, and dead-code gates inspect both `src/` and `tests/`. Interrogate and
 Bandit inspect production code under `src/` only.
 
-Project-wide engineering constraints and any human-approved exceptions are
-recorded in [`SUPPRESSIONS.md`](SUPPRESSIONS.md). Safety-tool suppressions
-require explicit human approval and an expiry date. Approved mocks and patches
-would be recorded in [`MOCKS.md`](MOCKS.md); its current approved ledger is
-empty.
+Nothing is suppressed and nothing is mocked. How an exception would be approved
+and recorded is in the runbook, under
+[Suppressions and safety findings](docs/tooling-and-runbook.md#suppressions-and-safety-findings).
