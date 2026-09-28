@@ -1,37 +1,18 @@
 # PetStore
 
-PetStore is a UV-managed collection of small Python tools for development work.
+Small Python tools for development work: `Validated` attributes checked on
+assignment, `Stub` for testing code through its IO seams, a cross-process path
+lock, and a zip with four termination policies. Python 3.10 or later, typed.
 
-Development, quality, commit, traceability, and troubleshooting instructions
-are in [`docs/tooling-and-runbook.md`](docs/tooling-and-runbook.md).
-The standard pattern for testable I/O and difficult exception boundaries is in
-[`docs/architecture/function-boundaries.md`](docs/architecture/function-boundaries.md).
+## Install
 
-## Setup
-
-```console
-uv sync
-uv run just hooks
-uv run just checks
-```
-
-`just` is the only task interface. `uv run just` uses the version pinned in
-`uv.lock`, so nothing needs installing system-wide; where `just` is already
-installed, `just checks` is the same command. `just --list` shows every recipe.
-
-### Dev Container
-
-The repository includes a reproducible development container using Python 3.14
-on Debian Bookworm and UV 0.12.6. Opening the repository in a Dev
-Container synchronizes the locked environment and installs the configured Git
-hooks when Git metadata is available.
-
-The container persists UV's download cache in a named volume and configures the
-Python, Ruff, Mypy, and Pytest editor integrations. After creation, run:
+petstore is not on PyPI. Install it from GitHub:
 
 ```console
-uv run just checks
+uv add git+https://github.com/scriptedworld/petstore
 ```
+
+or, with pip, `pip install git+https://github.com/scriptedworld/petstore`.
 
 ## Lazy zip
 
@@ -117,37 +98,56 @@ attribute it was, defaulting to the attribute name and overridable with
 `label=`. Validation applies to later assignment exactly as to construction,
 and works on frozen dataclasses, which reject ordinary attribute assignment.
 
-## Scripted test doubles
+## Testing IO through a seam
 
-The module guide is
-[`docs/modules/stubs.md`](docs/modules/stubs.md), and its requirements are
-registered in
-[`docs/modules/stubs.requirements.yaml`](docs/modules/stubs.requirements.yaml).
+Code that does IO takes the IO as an argument, defaulting to the real thing:
 
-`petstore.Stub` builds a callable whose successive outcomes are declared in
-advance and whose invocations are recorded:
+```python
+import errno
+from collections.abc import Callable
+from pathlib import Path
+
+Writer = Callable[[Path, str], None]
+
+
+def _write_text(path: Path, text: str) -> None:
+    path.write_text(text)
+
+
+def save_report(path: Path, text: str, *, writer: Writer = _write_text) -> bool:
+    """Save a report; False when the disk is full."""
+    try:
+        writer(path, text)
+    except OSError as error:
+        if error.errno != errno.ENOSPC:
+            raise
+        return False
+    return True
+```
+
+Production calls `save_report(path, text)`. A test provokes a full disk, which
+no real filesystem will do on demand, by passing a `petstore.Stub` through the
+seam:
 
 ```python
 from petstore import Stub
 
-fetch = Stub().returns(200).yields("a").yields("b").raises(TimeoutError)
 
-fetch()  # 200
-fetch()  # an iterator producing "a" then "b"
-fetch()  # raises TimeoutError
+def test_a_full_disk_is_reported_not_raised() -> None:
+    writer = Stub(_write_text).raises(OSError(errno.ENOSPC, "No space left on device"))
+
+    assert save_report(Path("report.txt"), "body", writer=writer) is False
+    assert writer.call_count == 1
 ```
 
-`returns` and `raises` each describe one whole call. `yields` and `yields_from`
-mirror the statements they are named after and accumulate into a single call's
-iterator, which the next `returns` or `raises` closes. Calling past the end of
-the script raises `StubExhaustedError` rather than silently repeating, and the
-unscripted call is still recorded. When repetition is wanted, a modifier widens
-the most recent link: `times(n)` for a counted run, `over(seconds=30)` for a time
-window measured by an injectable clock, or `always()` for every later call.
+Nothing is patched: the function declares the seam and the test uses it.
+`Stub(_write_text)` takes that function's signature and types, so it rejects a
+call the real one would. A stub scripts successive outcomes (`returns`,
+`raises`, `yields`) and records every call.
 
-Declaring a signature, either as parameter names or copied from a real callable,
-makes the stub reject calls the real function would reject and records arguments
-bound to their parameter names through `calls[n].bound_arguments`.
+[`docs/architecture/function-boundaries.md`](docs/architecture/function-boundaries.md)
+is the pattern, including several seams bound by a factory, and
+[`docs/modules/stubs.md`](docs/modules/stubs.md) is the guide to `Stub`.
 
 ## Path locks
 
@@ -174,59 +174,19 @@ path, so the path itself need not exist and is never touched. Lock files live
 under `$XDG_RUNTIME_DIR`; use `make_locked(lock_dir=...)` where no runtime
 directory exists. POSIX only.
 
-## Quality gates
-
-Install the development tools and run the whole gate:
+## Developing petstore
 
 ```console
 uv sync
 uv run just checks
 ```
 
-`checks` runs formatting checks, Ruff, Mypy, Pylint, Complexipy, Interrogate,
-Vulture, Bandit, mechanical requirement traceability, Pytest with enforced
-coverage, and the estate's secrets scan, cheapest first, stopping at the first
-failure. Each gate is also a recipe of its own, such as `just typecheck` or
-`just requirements`. `just test` runs the suite without coverage for a fast inner
-loop, and `just fix` formats code and applies safe Ruff fixes.
+`checks` is the whole gate: formatting, lint, strict typing, complexity,
+docstrings, dead code, bandit, requirement traceability, the suite at 100% line
+and branch coverage, and a secrets scan. The scan needs
+[bolt](https://github.com/scriptedworld/bolt), `gitleaks` and `detect-secrets`
+on `PATH`. `uv run just --list` shows every recipe.
 
-The recipe names follow a shared Justfile interface: `just/base.just` is a copy
-of [toolbox](https://github.com/scriptedworld/toolbox)'s and supplies the ten
-standard recipes, and `just/project.just` holds petstore's own, which take
-precedence. The secrets scan needs [bolt](https://github.com/scriptedworld/bolt),
-`gitleaks` and `detect-secrets` on `PATH`.
-
-## Commits
-
-Install both the quality and commit-message hooks after cloning:
-
-```console
-uv run just hooks
-```
-
-Create commits through Commitizen:
-
-```console
-uv run just commit
-```
-
-Every commit message must follow Conventional Commits. Both hooks call `just`
-recipes and nothing else: `pre-commit` runs `just checks`, so a commit runs
-exactly the gate that runs by hand, and `commit-msg` runs `just commit-check`,
-which rejects a non-conforming message. Run all file-oriented hooks manually
-with `uv run just hooks-run`.
-
-`just hooks` refuses on a machine where git's `core.hooksPath` is set globally,
-because git then reads no repository's hooks. It works in the Dev Container.
-
-Pytest enforces 100% line and branch coverage and prints coverage for every
-source file. Pylint permits no findings and does not calculate an averaged
-score. Interrogate requires 100% documentation coverage. Ruff and Pylint limit
-nesting to three blocks; Ruff and Complexipy enforce a per-function complexity
-ceiling of 15. Source lines may be up to 150 characters. Complexity, typing,
-lint, and dead-code gates inspect both `src/` and `tests/`. Interrogate and
-Bandit inspect production code under `src/` only.
-
-Nothing is suppressed and nothing is mocked. How an exception would be approved
-and recorded is in the runbook, under
-[Suppressions and safety findings](docs/tooling-and-runbook.md#suppressions-and-safety-findings).
+[`docs/tooling-and-runbook.md`](docs/tooling-and-runbook.md) covers the Dev
+Container, the recipes, the commit hooks and troubleshooting. Nothing is
+suppressed and nothing is mocked.

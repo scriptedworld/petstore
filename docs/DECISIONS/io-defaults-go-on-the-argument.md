@@ -16,6 +16,5 @@ defaults and a factory binds the production ones, is the form for a function
 with several seams that vary together. The documentation shows it second, as
 that case, not as the default.
 
-`docs/architecture/function-boundaries.md` and the runbook's "Exception and I/O
-seams" section described the factory as the only form, with production defaults
-banned from the implementation. They follow this decision.
+`docs/architecture/function-boundaries.md`, the runbook's "Exception and I/O
+seams" section and the README follow this decision.

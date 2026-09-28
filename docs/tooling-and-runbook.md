@@ -189,23 +189,15 @@ review that deeper relationship.
 
 ## Exception and I/O seams
 
-All I/O boundaries are isolated behind seam functions. Non-I/O operations use
-an injected seam only when inducing a required exception type directly would
-otherwise be difficult or unreliable. Ordinary validation failures that are
-easy to construct do not justify injection parameters.
+Every IO boundary is a small function passed in through a keyword-only
+parameter whose default is that function. A non-IO operation gets a seam only
+when the failure a test needs is hard to provoke for real. A test passes a
+`petstore.Stub` through the seam, so nothing is patched.
 
-The canonical implementation pattern is documented in
-[`architecture/function-boundaries.md`](architecture/function-boundaries.md).
-A private implementation function receives explicit keyword-only strategies or
-one immutable function policy. An operation-specific composition factory binds
-the production implementations and returns a closure with the clean public
-signature. Production defaults belong to the factory, not the implementation.
-The closure performs pass-through wiring only.
-
-Use one strategy function for one boundary. Use a function policy only for a
-cohesive group of related boundary functions that normally varies together. A
-policy is an immutable typed bag of functions, not a service container. Pure
-logic and directly inducible failures do not receive seams.
+Several boundaries that vary together go in one immutable function policy,
+bound by a composition factory.
+[`architecture/function-boundaries.md`](architecture/function-boundaries.md)
+has both forms with worked examples.
 
 The project uses no mocks or runtime patching. One approved by me before it is
 written gets a file of its own in `docs/MOCKS/`, giving its exact location and

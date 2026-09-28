@@ -9,9 +9,9 @@ replace a runtime object and is not a mock.
 Reach for `Stub` directly when successive calls need to differ, such as a
 write that fails twice and then succeeds.
 
-Generated stubs are intended for the implementation layer described by the
-[`functional boundary-composition standard`](../architecture/function-boundaries.md)
-or as entries in a test function policy.
+Generated stubs are passed through the seams described in
+[`function-boundaries.md`](../architecture/function-boundaries.md), either as
+one argument or as entries in a function policy.
 
 The canonical requirements are in
 [`stub.requirements.yaml`](stub.requirements.yaml).
