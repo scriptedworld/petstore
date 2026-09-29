@@ -13,7 +13,7 @@
 # second, not after the whole suite. just stops at the first failing
 # line, so the first failure is the one reported.
 
-# everything: formatting, lint, types, analysis, traceability, coverage, secrets
+# everything: formatting, lint, types, analysis, wording, traceability, coverage, secrets
 checks:
     @just format-check
     @just lint
@@ -23,9 +23,23 @@ checks:
     @just docs
     @just dead-code
     @just security
+    @just wording
     @just requirements
     @just coverage
     @just leak-scan
+
+# The wording check is toolbox's bin/voice-tells.py, run from a toolbox
+# checkout beside this tree; `just toolbox=/path/to/toolbox wording` names
+# another. Commits after the SHA in .voice-review-start are read as well.
+toolbox := "../toolbox"
+
+# the writing standard's wording, over every file and every commit since the start SHA
+wording:
+    python3 {{ toolbox }}/bin/voice-tells.py --all-files
+
+# the same check over one commit message; the commit-msg hook passes its file
+wording-commit-msg file:
+    python3 {{ toolbox }}/bin/voice-tells.py --commit-msg-filename {{ file }}
 
 # `test` is the suite without coverage. pyproject's pytest options always measure and
 # enforce coverage, so `test` switches that off to be the fast inner loop, and

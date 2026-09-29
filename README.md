@@ -182,10 +182,11 @@ uv run just checks
 ```
 
 `checks` is the whole gate: formatting, lint, strict typing, complexity,
-docstrings, dead code, bandit, requirement traceability, the suite at 100% line
-and branch coverage, and a secrets scan. The scan needs
-[bolt](https://github.com/scriptedworld/bolt), `gitleaks` and `detect-secrets`
-on `PATH`. `uv run just --list` shows every recipe.
+docstrings, dead code, bandit, wording, requirement traceability, the suite at
+100% line and branch coverage, and a secrets scan. The wording check needs a
+[toolbox](https://github.com/scriptedworld/toolbox) checkout beside this tree,
+and the scan needs [bolt](https://github.com/scriptedworld/bolt), `gitleaks`
+and `detect-secrets` on `PATH`. `uv run just --list` shows every recipe.
 
 [`docs/tooling-and-runbook.md`](docs/tooling-and-runbook.md) covers the Dev
 Container, the recipes, the commit hooks and troubleshooting. Nothing is

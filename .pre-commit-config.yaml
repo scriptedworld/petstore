@@ -21,3 +21,9 @@ repos:
         entry: uv run just commit-check --commit-msg-file
         language: system
         stages: [commit-msg]
+
+      - id: wording-commit-msg
+        name: commit message wording (just wording-commit-msg)
+        entry: uv run just wording-commit-msg
+        language: system
+        stages: [commit-msg]

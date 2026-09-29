@@ -3,7 +3,8 @@
 `just/base.just` and `bolt.secrets.yaml` belong to
 [toolbox](https://github.com/scriptedworld/toolbox). They are committed here
 as real files, not symlinks into a checkout beside this one, so a clone of
-petstore runs every recipe with nothing beside it.
+petstore can run its recipes without that checkout. The checks that run
+toolbox's own scripts, such as `wording`, still need it.
 
 `just vendor` replaces both with toolbox's `main` on GitHub, and `git diff`
 shows what changed upstream. That keeps refreshing to one command, with no

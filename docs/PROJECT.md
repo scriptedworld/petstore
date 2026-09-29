@@ -61,8 +61,8 @@ the sandbox's device mounts, and git records the host identity as author.
 ## How it fits against its siblings
 
 `just/base.just` and `bolt.secrets.yaml` are vendored from `toolbox` and
-refreshed by `just vendor`, so a clone needs nothing beside it. `leak-scan`
-needs `bolt` on `PATH`. Nothing installs petstore yet.
+refreshed by `just vendor`. `wording` needs a toolbox checkout beside this
+tree, and `leak-scan` needs `bolt` on `PATH`. Nothing installs petstore yet.
 
 ## What is decided, and what is open
 

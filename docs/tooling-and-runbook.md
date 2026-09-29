@@ -83,6 +83,10 @@ toolbox's `main`, and `git diff` shows what changed upstream.
 [bolt](https://github.com/scriptedworld/bolt), with `gitleaks` and
 `detect-secrets` on `PATH`. bolt's `docs/runbook.md` says how to build it.
 
+`wording` runs toolbox's `bin/voice-tells.py` from a toolbox checkout beside
+this tree; `just toolbox=/path/to/toolbox wording` names another. It reads
+every file, and every commit after the SHA in `.voice-review-start`.
+
 List every recipe:
 
 ```console
@@ -99,6 +103,7 @@ Frequently used recipes:
 | `fix` | Format files and apply safe Ruff fixes. |
 | `requirements` | Validate requirement-to-test traceability and emit canonical YAML evidence. |
 | `leak-scan` | Run toolbox's secrets jig through bolt. |
+| `wording` | Check files and recent commits against the writing standard's wording. |
 | `hooks` | Install the configured `pre-commit` and `commit-msg` hooks. |
 | `hooks-run` | Run file-oriented pre-commit hooks against the repository. |
 | `commit` | Create a Conventional Commit through Commitizen. |
@@ -122,6 +127,7 @@ authoritative final result.
 | Vulture | Yes | Yes | Dead-code checks use 100% confidence. |
 | Bandit | Yes | No | Production security findings fail the gate. |
 | Pytest and Coverage | Produces coverage | Executes tests | Production line and branch coverage must each reach 100%. |
+| Wording (`wording`) | Yes | Yes | Every tracked text file and every commit after `.voice-review-start`; any finding fails. |
 | Secrets jig (`leak-scan`) | Yes | Yes | Run through bolt over the whole repository; the verdict is read from bolt's `result.yaml`, never its exit status. |
 
 Quality thresholds apply to each finding, function, or file as appropriate.
@@ -135,7 +141,7 @@ recipe and nothing else:
 - `pre-commit` runs `uv run just checks`, so a commit runs exactly the gate that
   runs by hand.
 - `commit-msg` runs `uv run just commit-check`, which validates the message with
-  Commitizen.
+  Commitizen, and `uv run just wording-commit-msg`, which checks its wording.
 
 All commit messages must follow Conventional Commits. The normal workflow is:
 
