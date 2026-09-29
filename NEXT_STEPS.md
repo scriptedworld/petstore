@@ -19,8 +19,8 @@ repository. What it waits on:
 ## Not kept: the oslo history
 
 A second, unrelated history of this project (`a7149e4`, `10e1a910`) survives
-only in a local snapshot. It is not kept. Checked 2026-09-28 with `diff -ru`
-over `src`, `tests` and `docs`: the snapshot's working tree holds nothing this
+only in a local snapshot. It is not kept. Compared with `diff -ru` over
+`src`, `tests` and `docs`, the snapshot's working tree holds nothing this
 tree lacks, and its one extra file, `tests/conftest.py`, is the `generate` that
 `40b3cf1` replaced. The two commits were not compared individually.
 

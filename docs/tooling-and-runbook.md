@@ -1,8 +1,7 @@
 # Tooling and project runbook
 
 This document is the operational reference for developing, validating, and
-maintaining PetStore. The same structure is intended to become the baseline for
-future Python projects after it has been proven here.
+maintaining petstore.
 
 ## Supported environments
 
@@ -19,11 +18,11 @@ own digest-pinned Python and UV environment.
 
 YAML is the project default whenever a tool or internal format permits a
 choice. New project-owned registries, policies, and portable configuration
-files should use YAML rather than TOML or JSON.
+files use YAML, not TOML or JSON.
 
 Mandatory ecosystem formats remain in their required native representation.
 Examples include `pyproject.toml`, `uv.lock`, and `.devcontainer/devcontainer.json`.
-Requirement registries will use names such as
+Requirement registries are named for their module, such as
 `docs/modules/iteration.requirements.yaml`.
 
 ## First-time setup
@@ -50,16 +49,16 @@ uv run just hooks
 uv run just checks
 ```
 
-`uv sync --frozen` must fail rather than silently changing an outdated
-lockfile. Dependency changes are made deliberately with `uv add`, `uv remove`,
+`uv sync --frozen` fails on an outdated lockfile instead of silently changing
+it. Dependency changes are made deliberately with `uv add`, `uv remove`,
 or `uv lock`, followed by review of `uv.lock`.
 
 ## just is the task interface
 
 `just` owns the executable project workflow, and it is the only task runner the
-repository has. Pre-commit hooks and documentation call `just` recipes rather
-than individual tools. This is an estate-wide standard: every project exposes
-the same recipe names, so the same words work in every tree.
+repository has. Pre-commit hooks and documentation call `just` recipes, never
+individual tools. My projects share the recipe names, so the same words work in
+every tree.
 
 `just` itself is pinned in `uv.lock` as the `rust-just` development dependency.
 `uv run just <recipe>` therefore needs nothing installed beyond UV, and behaves
@@ -71,7 +70,7 @@ wins:
 
 | File | Owner | Holds |
 | --- | --- | --- |
-| `Justfile` | Estate standard | Imports only, plus `default`. Identical in every project. |
+| `Justfile` | Shared | Imports only, plus `default`. Identical in every project. |
 | `just/project.just` | This repository | petstore's own recipes, which override the base. |
 | `just/base.just` | toolbox, vendored | The ten standard recipes, each a working default or a no-op that succeeds. |
 
@@ -99,7 +98,7 @@ Frequently used recipes:
 | `coverage` | Run the suite with 100% line and branch coverage enforced. |
 | `fix` | Format files and apply safe Ruff fixes. |
 | `requirements` | Validate requirement-to-test traceability and emit canonical YAML evidence. |
-| `leak-scan` | Run the estate's secrets jig through bolt. |
+| `leak-scan` | Run toolbox's secrets jig through bolt. |
 | `hooks` | Install the configured `pre-commit` and `commit-msg` hooks. |
 | `hooks-run` | Run file-oriented pre-commit hooks against the repository. |
 | `commit` | Create a Conventional Commit through Commitizen. |
@@ -146,15 +145,14 @@ uv run just commit
 
 `pre-commit` refuses to install on a machine where git's `core.hooksPath` is set
 globally, because git then reads no repository's `.git/hooks`. The Dev Container
-does not set it, so the hooks install and run there. How the hook is wired on
-such machines is an open estate-wide question.
+does not set it, so the hooks install and run there.
 
 Bypassing a local hook does not waive a requirement. The same checks must run
 in automation when continuous integration is added.
 
 ## Module documentation and requirements
 
-Every production module has a human-oriented Markdown guide and a canonical
+Every production module has a Markdown guide and a canonical
 `*.requirements.yaml` registry under `docs/modules/`. YAML is the sole normative
 source for requirement statements and lifecycle metadata. Requirement IDs are
 never deleted or reused.
@@ -183,9 +181,8 @@ without importing or executing them and emits the canonical tool-result format
 documented in [`modules/tool-output.md`](modules/tool-output.md).
 
 Mechanical traceability proves that the declared evidence is complete and
-internally consistent. It does not prove that assertions semantically establish
-the requirement. A future agent skill will consume the normalized evidence to
-review that deeper relationship.
+internally consistent. It does not prove that the assertions establish the
+requirement; that takes reading the tests.
 
 ## Exception and I/O seams
 
@@ -229,9 +226,9 @@ creation. Network access is expected only for explicit operations such as:
 - deliberately updating tool rules or vulnerability databases.
 
 Secret verification, telemetry, repository outreach, and implicit database
-updates are not allowed during ordinary checks. Future secrets and dependency
-vulnerability tasks must provide separate explicit update commands and offline
-enforcement commands.
+updates are not allowed during ordinary checks. A check that needs updated
+rules or databases keeps the update as a separate, explicit command, and
+enforces offline.
 
 ## Troubleshooting
 
@@ -247,7 +244,7 @@ Run `uv run just hooks`. Hook installation requires a functional Git repository.
 ### A quality tool needs a cache directory
 
 Use a writable cache directory appropriate to the environment. CI and container
-configuration should supply this explicitly rather than writing into an
+configuration should supply this explicitly, so no tool writes into an
 unavailable host home directory.
 
 ### A finding appears incorrect
@@ -259,5 +256,5 @@ record the approved exception and its expiry in `docs/SUPPRESSIONS/`.
 ### The host behaves differently from the container
 
 Treat the digest-pinned Dev Container as the reference. Rebuild it and run
-`uv run just checks` inside it. Differences that remain must be resolved in the
-checked-in project configuration rather than through undocumented host setup.
+`uv run just checks` inside it. Resolve any difference that remains in the
+checked-in project configuration, not in undocumented host setup.

@@ -41,7 +41,8 @@ by toolbox's `test-traceability.py`. Tests cite requirements with
 `@pytest.mark.requirement(...)`, not `COVERS:` comments. The registry carries
 retirement, `superseded_by` and `next_id`, so an ID is never reused.
 
-Moving to the estate form, `docs/REQUIREMENTS/<category>/<requirement>.md`, is
+Moving to the form my other projects use,
+`docs/REQUIREMENTS/<category>/<requirement>.md`, is
 decided and not started; `NEXT_STEPS.md` says what it waits on.
 
 ## The gate
@@ -53,10 +54,6 @@ bandit, requirement traceability, pytest at 100% line and branch coverage, and
 bolt's secrets scan, cheapest first. Every tool runs through `uv run` at the
 version `uv.lock` pins. The secrets verdict is `success` in the bolt run's
 `result.yaml`, which `just checks` prints the path of.
-
-Checked 2026-09-28 at `f6ff45d`: all green. 113 tests, 694 statements and 186
-branches covered, 53 of 53 active requirements with evidence, secrets
-`success: true`.
 
 Run `just checks` and commit with the sandbox off: inside it ruff fails reading
 the sandbox's device mounts, and git records the host identity as author.

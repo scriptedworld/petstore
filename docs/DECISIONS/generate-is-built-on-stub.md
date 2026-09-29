@@ -1,7 +1,5 @@
 # generate is built on Stub
 
-Decided 2026-09-28.
-
 `petstore.generate` is the one-behavior short form of `petstore.Stub`: it builds
 a stub whose script is a single `always()` link. There is one seam double, not
 two, so it carries one call history, one typing and one set of requirements.

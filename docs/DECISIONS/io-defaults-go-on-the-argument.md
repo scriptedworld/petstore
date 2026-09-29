@@ -1,7 +1,5 @@
 # IO defaults go on the argument
 
-Decided 2026-09-28.
-
 A function that does IO takes the IO as an argument whose default is the real
 boundary:
 

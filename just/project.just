@@ -1,8 +1,8 @@
 # petstore's own recipes. No template writes this file.
 #
 # just is the only task interface this tree has: no task is defined in any other
-# runner. Where a recipe does something among the estate's ten, it takes that
-# name, so the whole gate is `checks` here as it is everywhere.
+# runner. Where a recipe does one of base.just's ten jobs, it takes that name,
+# so the whole gate is `checks` here as it is in every tree.
 #
 # Every recipe runs through uv. petstore's tools are pinned in uv.lock, and a
 # bare `mypy` or `pytest` from PATH is a different version against a different
@@ -108,9 +108,7 @@ vendor:
 # `hooks` refuses on any machine with a global core.hooksPath, including the
 # development host: git reads no .git/hooks there, and pre-commit will not
 # install into a directory git ignores. It works in the devcontainer and
-# anywhere else core.hooksPath is unset. How the hook is wired across every
-# repository is an open question, filed at
-# the task tracker.
+# anywhere else core.hooksPath is unset.
 
 # install the pre-commit and commit-msg hooks
 hooks:
