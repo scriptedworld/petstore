@@ -84,11 +84,11 @@ Justfile loads without a toolbox checkout. Edit neither here. `just vendor`
 replaces both with toolbox's `main`, and `git diff` shows what changed
 upstream.
 
-`checks` runs the `python-std-quality` jig from the toolbox checkout, and
-`wording` and `requirements` run toolbox's `bin/voice-tells.py` and
-`bin/test-traceability.py` from it; `just toolbox=/path/to/toolbox checks`
-names another. `leak-scan` runs the vendored secrets jig. `wording` reads every
-file, and every commit after the SHA in `.voice-review-start`.
+`checks` runs the `python-std-quality` and `common-quality` jigs from the
+toolbox checkout; `just toolbox=/path/to/toolbox checks` names another.
+`common-quality` takes toolbox's `requirements-directory` definitions, which
+point it at `docs/REQUIREMENTS`. `leak-scan` runs the vendored secrets jig
+alone.
 
 List every recipe:
 
@@ -100,13 +100,11 @@ Frequently used recipes:
 
 | Recipe | Purpose |
 | --- | --- |
-| `checks` | Run the whole gate: the Python jig, wording, traceability and secrets. |
+| `checks` | Run the whole gate: the Python jig, then traceability, suppressions, wording and secrets. |
 | `test` | Run the suite, for a fast inner loop. |
 | `coverage` | Run the suite under coverage and report it per file. |
 | `fix` | Format files and apply safe Ruff fixes. |
-| `requirements` | Check that every test cites a requirement and every settled requirement has a test. |
 | `leak-scan` | Run toolbox's secrets jig through bolt. |
-| `wording` | Check files and recent commits against the writing standard's wording. |
 | `hooks` | Install the configured `pre-commit` and `commit-msg` hooks. |
 | `hooks-run` | Run file-oriented pre-commit hooks against the repository. |
 | `commit` | Create a Conventional Commit through Commitizen. |
@@ -134,13 +132,14 @@ one beside the task that holds it. In outline:
 | `security`, `security-tests` | bandit over the source, and over the tests except `assert`. |
 | `tests` | the suite under coverage, each file at 80% of lines and 80% of branches. |
 
-Beside the jig:
+Then toolbox's `common-quality` jig:
 
-| Recipe | Policy |
+| Task | Policy |
 | --- | --- |
+| `traceability` | Every test cites a requirement, and every settled requirement has a test. |
+| `suppressions` | Every suppression pragma is registered in `SUPPRESSIONS/`, and every entry is real. |
 | `wording` | Every tracked text file and every commit after `.voice-review-start`; any finding fails. |
-| `requirements` | Every test cites a requirement, and every settled requirement has a test. |
-| `leak-scan` | The secrets jig over the whole repository and its history. |
+| `secrets` | The secrets jig over the whole repository and its history. |
 
 Each bolt run's verdict is `success` in the `result.yaml` it names, never its
 exit status. Thresholds apply per file or per function, never averaged.
@@ -193,8 +192,8 @@ When adding or changing behavior:
 3. Add tests carrying `COVERS` comments.
 4. Run `uv run just checks`.
 
-`just requirements` runs toolbox's `bin/test-traceability.py` from a toolbox
-checkout beside this tree. It fails a test that cites nothing or cites an
+The `common-quality` jig's `traceability` task runs toolbox's
+`bin/test-traceability.py`. It fails a test that cites nothing or cites an
 unknown or retired ID, and a settled requirement no test cites.
 
 Mechanical traceability proves that the declared evidence is complete and
@@ -222,7 +221,7 @@ exists only once there is an entry.
 
 An inline `# noqa` or `# nosec`, a tool configuration exception, or an accepted
 safety finding is approved by me before it is added, and gets a file of its own
-in `docs/SUPPRESSIONS/` containing:
+in `SUPPRESSIONS/`, which the gate reads, containing:
 
 - scope, tool, and exact rule;
 - the reason it is safe and was allowed;
@@ -268,7 +267,7 @@ unavailable host home directory.
 
 Fix or restructure the code first. Where a suppression is genuinely necessary,
 ask me before changing configuration or adding an inline declaration, then
-record the approved exception and its expiry in `docs/SUPPRESSIONS/`.
+record the approved exception and its expiry in `SUPPRESSIONS/`.
 
 ### The host behaves differently from the container
 

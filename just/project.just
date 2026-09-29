@@ -10,24 +10,17 @@
 # another checkout. The jigs call their tools from PATH; uv.lock pins the same
 # tools for the recipes below.
 #
-# `wording` and `requirements` run toolbox's scripts directly, and `leak-scan`
-# runs the secrets jig, because the common-quality jig that holds all three
-# takes its definitions only from toolbox's own directory and so cannot yet be
-# told where petstore keeps its requirements.
+# common-quality holds traceability, suppressions, wording and secrets. Its
+# `requirements-directory` definitions, which toolbox ships, point it at
+# docs/REQUIREMENTS.
 toolbox := "../toolbox"
 
-# everything: the Python jig, wording, traceability and secrets
+# everything: the Python jig, then traceability, suppressions, wording and secrets
 checks:
     @just _verdict python-std-quality --config-dir {{ toolbox }}
-    @just wording
-    @just requirements
-    @just leak-scan
+    @just _verdict common-quality --config-dir {{ toolbox }} --definitions requirements-directory
 
-# the writing standard's wording, over every file and every commit since the start SHA
-wording:
-    python3 {{ toolbox }}/bin/voice-tells.py --all-files
-
-# the same check over one commit message; the commit-msg hook passes its file
+# the writing standard's wording over one commit message; the commit-msg hook passes its file
 wording-commit-msg file:
     python3 {{ toolbox }}/bin/voice-tells.py --commit-msg-filename {{ file }}
 
@@ -56,10 +49,6 @@ lint-fix:
 fix:
     @just format
     @just lint-fix
-
-# every test cites a requirement and every settled requirement has a test
-requirements:
-    python3 {{ toolbox }}/bin/test-traceability.py --requirements docs/REQUIREMENTS .
 
 # the wheel and source distribution
 dist:

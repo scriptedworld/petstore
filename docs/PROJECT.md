@@ -44,15 +44,12 @@ requirements carried before.
 
     just checks
 
-toolbox's `python-std-quality` jig through bolt, then toolbox's wording and
-traceability scripts, then the secrets jig. Each bolt verdict is `success` in
-the `result.yaml` whose path `just checks` prints. The thresholds are the
-jig's, stated in toolbox's `bolt.python-std-quality.yaml`; petstore sets none
-of its own.
-
-`common-quality` should replace the two direct script calls, and waits on
-toolbox shipping a definitions file that points it at `docs/REQUIREMENTS`:
-bolt reads definitions only from the config directory.
+toolbox's `python-std-quality` and `common-quality` jigs through bolt, the
+second with toolbox's `requirements-directory` definitions. Each verdict is
+`success` in the `result.yaml` whose path `just checks` prints. The thresholds
+are the jigs', stated in toolbox's jig files; petstore sets none of its own.
+bolt reads definitions only from the config directory, so an override petstore
+needs has to ship in toolbox.
 
 Run `just checks` and commit with the sandbox off: inside it ruff fails reading
 the sandbox's device mounts, and git records the host identity as author.

@@ -5,9 +5,6 @@ repository. What it waits on:
 
 - A `proc` subprocess module lands before publishing. Its bandit findings are
   put to me before any suppression is written.
-- `just checks` runs `python-std-quality` through bolt. `common-quality`
-  replaces the direct wording and traceability calls once toolbox ships a
-  definitions file naming `docs/REQUIREMENTS`.
 - `Stub` is trimmed to what reaches a failure, from a proposal I have not seen
   yet.
 
