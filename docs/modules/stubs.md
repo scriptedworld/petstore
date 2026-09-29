@@ -98,26 +98,8 @@ A stub built without a callable accepts any arguments and returns `Any`.
 For a seam that does the same thing on every call,
 [`generate`](../testing/stub.md) is the short form.
 
-## Canonical requirements
+## Requirements
 
-[`stubs.requirements.yaml`](stubs.requirements.yaml) is the sole normative
-source for this module's requirements. Requirement statements must not be
-duplicated or edited in this Markdown file.
-
-The YAML registry is append-only after requirements become active. IDs are
-never deleted or reused; replaced behavior is retained with `status: retired`
-and linked to its replacement through `superseded_by`.
-
-| ID | Status | Title |
-| --- | --- | --- |
-| `PS-STUB-001` | Active | Scripted call sequence |
-| `PS-STUB-002` | Active | Value and exception outcomes |
-| `PS-STUB-003` | Active | Generator composition |
-| `PS-STUB-004` | Active | Script exhaustion |
-| `PS-STUB-005` | Active | Call recording |
-| `PS-STUB-006` | Active | Declared signatures |
-| `PS-STUB-007` | Active | Repeating link |
-| `PS-STUB-008` | Retired | Counted link |
-| `PS-STUB-009` | Retired | Timed link |
-| `PS-STUB-010` | Active | Counted link |
-| `PS-STUB-011` | Active | Timed link |
+[`docs/REQUIREMENTS/stubs/`](../REQUIREMENTS/stubs/) holds this
+module's requirements, `FR-3.x`, one file each. Tests cite them with a
+`# COVERS <ids> | <kind>` comment directly above the test.

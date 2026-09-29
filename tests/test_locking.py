@@ -65,11 +65,7 @@ def _hold_lock(lock_dir: Path, target: Path, held: Event, done: Event) -> None:
         done.wait(timeout=10)
 
 
-@pytest.mark.requirement(
-    "PS-LOCK-001",
-    functionality="lock.exclusion",
-    test_type="invariant",
-)
+# COVERS FR-5.1 | property
 def test_a_held_lock_excludes_a_second_holder_until_released(tmp_path: Path) -> None:
     """Verify a second holder cannot acquire a held lock, and can once it is released."""
     locker = make_locked(lock_dir=tmp_path)
@@ -81,11 +77,7 @@ def test_a_held_lock_excludes_a_second_holder_until_released(tmp_path: Path) -> 
     _enter(locker(target, timeout=0))
 
 
-@pytest.mark.requirement(
-    "PS-LOCK-001",
-    functionality="lock.exclusion",
-    test_type="positive",
-)
+# COVERS FR-5.1 | positive
 def test_a_lock_held_in_another_process_excludes_this_one(tmp_path: Path) -> None:
     """Verify exclusion holds across processes, not only within one."""
     locker = make_locked(lock_dir=tmp_path)
@@ -108,11 +100,7 @@ def test_a_lock_held_in_another_process_excludes_this_one(tmp_path: Path) -> Non
     _enter(locker(target, timeout=0))
 
 
-@pytest.mark.requirement(
-    "PS-LOCK-002",
-    functionality="lock.blocking",
-    test_type="positive",
-)
+# COVERS FR-5.2 | positive
 def test_without_a_timeout_acquisition_blocks_once_instead_of_polling() -> None:
     """Verify a blocking wait makes one blocking attempt and never polls."""
     stubs = _stubs()
@@ -124,11 +112,7 @@ def test_without_a_timeout_acquisition_blocks_once_instead_of_polling() -> None:
     assert stubs["sleep"].call_count == 0
 
 
-@pytest.mark.requirement(
-    "PS-LOCK-003",
-    functionality="lock.timeout",
-    test_type="positive",
-)
+# COVERS FR-5.3 | positive
 def test_with_a_timeout_acquisition_retries_until_the_lock_is_free() -> None:
     """Verify failed attempts sleep one poll interval and try again."""
     held_attempts = 2
@@ -144,11 +128,7 @@ def test_with_a_timeout_acquisition_retries_until_the_lock_is_free() -> None:
     assert stubs["wait_lock"].call_count == 0
 
 
-@pytest.mark.requirement(
-    "PS-LOCK-003",
-    functionality="lock.timeout",
-    test_type="negative",
-)
+# COVERS FR-5.3 | negative
 def test_acquisition_times_out_when_the_lock_stays_held() -> None:
     """Verify LockTimeoutError once the timeout passes, and a negative timeout is refused."""
     stubs = _stubs(
@@ -165,11 +145,7 @@ def test_acquisition_times_out_when_the_lock_stays_held() -> None:
     assert refused["open_lock"].call_count == 0
 
 
-@pytest.mark.requirement(
-    "PS-LOCK-003",
-    functionality="lock.timeout",
-    test_type="edge",
-)
+# COVERS FR-5.3 | edge
 def test_zero_timeout_tries_once_and_short_waits_never_oversleep() -> None:
     """Verify a zero timeout makes one attempt, and a sleep never exceeds the time remaining."""
     single = _stubs(try_lock=Stub(parameters=["handle"]).returns(HELD).always())
@@ -186,11 +162,7 @@ def test_zero_timeout_tries_once_and_short_waits_never_oversleep() -> None:
     assert short["sleep"].calls[0].args[0] == pytest.approx(0.02)
 
 
-@pytest.mark.requirement(
-    "PS-LOCK-004",
-    functionality="lock.release",
-    test_type="invariant",
-)
+# COVERS FR-5.4 | property
 def test_the_lock_is_released_when_the_block_exits_normally() -> None:
     """Verify a clean exit releases the handle exactly once."""
     stubs = _stubs()
@@ -200,11 +172,7 @@ def test_the_lock_is_released_when_the_block_exits_normally() -> None:
     assert [call.args for call in stubs["release"].calls] == [(HANDLE,)]
 
 
-@pytest.mark.requirement(
-    "PS-LOCK-004",
-    functionality="lock.release",
-    test_type="negative",
-)
+# COVERS FR-5.4 | negative
 def test_the_lock_is_released_when_the_block_raises_or_acquisition_times_out() -> None:
     """Verify failures inside the block or while waiting still release the handle."""
     raising = _stubs()
@@ -219,11 +187,7 @@ def test_the_lock_is_released_when_the_block_raises_or_acquisition_times_out() -
     assert timing_out["release"].call_count == 1
 
 
-@pytest.mark.requirement(
-    "PS-LOCK-005",
-    functionality="lock.naming",
-    test_type="positive",
-)
+# COVERS FR-5.5 | positive
 def test_lock_files_are_digests_of_the_resolved_path_in_the_lock_directory(tmp_path: Path) -> None:
     """Verify the default runtime directory, an explicit directory, and the digest name."""
     target = tmp_path / "resource"
@@ -238,11 +202,7 @@ def test_lock_files_are_digests_of_the_resolved_path_in_the_lock_directory(tmp_p
     assert _opened_lock_file(explicit) == tmp_path / expected_name
 
 
-@pytest.mark.requirement(
-    "PS-LOCK-005",
-    functionality="lock.naming",
-    test_type="edge",
-)
+# COVERS FR-5.5 | edge
 def test_spellings_of_one_location_share_a_lock_and_other_locations_do_not(tmp_path: Path) -> None:
     """Verify naming follows the resolved location rather than the text of the path."""
     (tmp_path / "nested").mkdir()
@@ -257,11 +217,7 @@ def test_spellings_of_one_location_share_a_lock_and_other_locations_do_not(tmp_p
     assert names[0] != names[2]
 
 
-@pytest.mark.requirement(
-    "PS-LOCK-005",
-    functionality="lock.naming",
-    test_type="negative",
-)
+# COVERS FR-5.5 | negative
 def test_without_a_runtime_or_lock_directory_no_lock_file_is_opened() -> None:
     """Verify a missing runtime directory is reported rather than guessed around."""
     stubs = _stubs(runtime_dir=Stub().returns(None).always())
@@ -272,11 +228,7 @@ def test_without_a_runtime_or_lock_directory_no_lock_file_is_opened() -> None:
     assert stubs["open_lock"].call_count == 0
 
 
-@pytest.mark.requirement(
-    "PS-LOCK-006",
-    functionality="lock.composition",
-    test_type="positive",
-)
+# COVERS FR-5.6 | positive
 def test_the_composed_lock_and_runtime_boundary_use_the_real_system(tmp_path: Path) -> None:
     """Verify the factory binds its directory and the production boundaries work end to end."""
     locker = make_locked(lock_dir=tmp_path)
@@ -287,11 +239,7 @@ def test_the_composed_lock_and_runtime_boundary_use_the_real_system(tmp_path: Pa
     assert _runtime_dir() == os.environ.get("XDG_RUNTIME_DIR")
 
 
-@pytest.mark.requirement(
-    "PS-LOCK-006",
-    functionality="lock.composition",
-    test_type="invariant",
-)
+# COVERS FR-5.6 | property
 def test_lock_directories_and_files_are_private_to_their_owner(tmp_path: Path) -> None:
     """Verify a newly created lock directory and lock file grant nothing to others."""
     lock_dir = tmp_path / "locks"

@@ -98,9 +98,9 @@ dead-code:
 security:
     uv run bandit -c pyproject.toml -r src
 
-# requirement-to-test traceability, emitted as canonical YAML
+# every test cites a requirement and every settled requirement has a test
 requirements:
-    uv run petstore-requirements
+    python3 {{ toolbox }}/bin/test-traceability.py --requirements docs/REQUIREMENTS .
 
 # the wheel and source distribution
 dist:

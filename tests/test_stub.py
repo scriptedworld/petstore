@@ -17,12 +17,7 @@ def _invoke_without_arguments(operation: Callable[[], object]) -> object:
     return operation()
 
 
-@pytest.mark.requirement(
-    "PS-TEST-013",
-    "PS-TEST-012",
-    functionality=("generate.return_behavior", "generate.call_history"),
-    test_type="positive",
-)
+# COVERS FR-4.13, FR-4.12 | positive
 def test_generate_returns_value_and_records_unbounded_calls() -> None:
     """Verify return behavior and ordered metadata for arbitrary arguments."""
     expected_call_count = 2
@@ -43,12 +38,7 @@ def test_generate_returns_value_and_records_unbounded_calls() -> None:
     assert generated.calls[1].args == (2,)
 
 
-@pytest.mark.requirement(
-    "PS-TEST-007",
-    "PS-TEST-012",
-    functionality=("generate.raise_behavior", "generate.call_history"),
-    test_type="negative",
-)
+# COVERS FR-4.7, FR-4.12 | negative
 @pytest.mark.parametrize("exception", [RuntimeError, ValueError("failure")])
 def test_generate_raises_after_recording(exception: BaseException | type[BaseException]) -> None:
     """Verify class and instance exceptions are raised after call capture."""
@@ -62,12 +52,7 @@ def test_generate_raises_after_recording(exception: BaseException | type[BaseExc
     assert dict(generated.calls[0].kwargs) == {"keyword": 3}
 
 
-@pytest.mark.requirement(
-    "PS-TEST-008",
-    "PS-TEST-012",
-    functionality=("generate.yield_behavior", "generate.call_history"),
-    test_type="positive",
-)
+# COVERS FR-4.8, FR-4.12 | positive
 def test_generate_yields_fresh_sequence_for_each_call() -> None:
     """Verify yield behavior returns an independent iterator per invocation."""
     expected_call_count = 2
@@ -78,11 +63,7 @@ def test_generate_yields_fresh_sequence_for_each_call() -> None:
     assert generated.call_count == expected_call_count
 
 
-@pytest.mark.requirement(
-    "PS-TEST-010",
-    functionality="generate.explicit_signature",
-    test_type="positive",
-)
+# COVERS FR-4.10 | positive
 def test_generate_builds_signature_from_parameter_names() -> None:
     """Verify explicit parameter names constrain and describe calls."""
     generated = generate(returns="combined", parameters=["left", "right"])
@@ -96,11 +77,7 @@ def test_generate_builds_signature_from_parameter_names() -> None:
     assert generated.call_count == 1
 
 
-@pytest.mark.requirement(
-    "PS-TEST-010",
-    functionality="generate.callable_signature",
-    test_type="positive",
-)
+# COVERS FR-4.10 | positive
 def test_generate_derives_signature_from_callable() -> None:
     """Verify callable-derived functions enforce the inspected signature."""
 
@@ -118,11 +95,7 @@ def test_generate_derives_signature_from_callable() -> None:
     assert generated.call_count == 1
 
 
-@pytest.mark.requirement(
-    "PS-TEST-011",
-    functionality="generate.configuration_validation",
-    test_type="negative",
-)
+# COVERS FR-4.11 | negative
 @pytest.mark.parametrize(
     "configuration",
     [
@@ -140,11 +113,7 @@ def test_generate_requires_exactly_one_behavior(configuration: dict[str, object]
         invalid_generate(**configuration)
 
 
-@pytest.mark.requirement(
-    "PS-TEST-011",
-    functionality="generate.signature_validation",
-    test_type="negative",
-)
+# COVERS FR-4.11 | negative
 def test_generate_rejects_two_signature_sources() -> None:
     """Verify explicit and inspected signatures cannot be combined."""
 

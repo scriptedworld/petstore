@@ -6,12 +6,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
 authors = [{ name = "Ancient" }]
-dependencies = [
-    "pyyaml>=6.0.2",
-]
-
-[project.scripts]
-petstore-requirements = "petstore.traceability:main"
+dependencies = []
 
 [build-system]
 requires = ["hatchling"]
@@ -36,7 +31,6 @@ dev = [
     "pytest-cov>=6.2.1",
     "ruff>=0.12.10",
     "rust-just==1.58.0",
-    "types-pyyaml>=6.0.12",
     "vulture>=2.14",
 ]
 
@@ -56,9 +50,6 @@ addopts = [
     "--cov-branch",
     "--cov-report=term-missing",
     "--cov-fail-under=100",
-]
-markers = [
-    "requirement(*ids, functionality, test_type): trace a test to requirement IDs, invoked functionality string(s), and its test classification",
 ]
 testpaths = ["tests"]
 

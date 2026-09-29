@@ -66,21 +66,8 @@ on yourself. A forked child inherits a lock its parent holds, and the lock is
 released for both when the holder's block exits. Only POSIX systems provide
 `flock`.
 
-## Canonical requirements
+## Requirements
 
-[`locking.requirements.yaml`](locking.requirements.yaml) is the sole normative
-source for this module's requirements. Requirement statements must not be
-duplicated or edited in this Markdown file.
-
-The YAML registry is append-only after requirements become active. IDs are
-never deleted or reused; replaced behavior is retained with `status: retired`
-and linked to its replacement through `superseded_by`.
-
-| ID | Status | Title |
-| --- | --- | --- |
-| `PS-LOCK-001` | Active | Cross-process exclusion |
-| `PS-LOCK-002` | Active | Blocking acquisition |
-| `PS-LOCK-003` | Active | Timed acquisition |
-| `PS-LOCK-004` | Active | Release |
-| `PS-LOCK-005` | Active | Lock naming |
-| `PS-LOCK-006` | Active | Composition and production boundaries |
+[`docs/REQUIREMENTS/locking/`](../REQUIREMENTS/locking/) holds this
+module's requirements, `FR-5.x`, one file each. Tests cite them with a
+`# COVERS <ids> | <kind>` comment directly above the test.

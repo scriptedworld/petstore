@@ -52,11 +52,7 @@ class Anything:
     payload: Validated[str] = NO_RULES
 
 
-@pytest.mark.requirement(
-    "PS-VALID-001",
-    functionality="validated.assignment",
-    test_type="positive",
-)
+# COVERS FR-2.1 | positive
 def test_constructor_validates_and_stores_an_acceptable_value() -> None:
     """Verify a dataclass constructor runs the rules and keeps the value."""
     label = Label("hello")
@@ -64,11 +60,7 @@ def test_constructor_validates_and_stores_an_acceptable_value() -> None:
     assert label.text == "hello"
 
 
-@pytest.mark.requirement(
-    "PS-VALID-001",
-    functionality="validated.assignment",
-    test_type="invariant",
-)
+# COVERS FR-2.1 | property
 def test_later_assignment_is_validated_like_construction() -> None:
     """Verify assignment after construction applies the same rules."""
     note = Note("first body")
@@ -80,11 +72,7 @@ def test_later_assignment_is_validated_like_construction() -> None:
         note.body = "   "
 
 
-@pytest.mark.requirement(
-    "PS-VALID-002",
-    functionality="validated.rules",
-    test_type="positive",
-)
+# COVERS FR-2.2 | positive
 def test_an_attribute_without_rules_accepts_any_value() -> None:
     """Verify declaring no rules leaves the value unchecked."""
     anything = Anything("")
@@ -92,11 +80,7 @@ def test_an_attribute_without_rules_accepts_any_value() -> None:
     assert anything.payload == ""
 
 
-@pytest.mark.requirement(
-    "PS-VALID-002",
-    functionality="validated.rules",
-    test_type="negative",
-)
+# COVERS FR-2.2 | negative
 def test_the_first_failing_rule_determines_the_reported_failure() -> None:
     """Verify rules run in order and later rules do not mask the first failure."""
     with pytest.raises(ValidationError) as blank_failure:
@@ -109,33 +93,21 @@ def test_the_first_failing_rule_determines_the_reported_failure() -> None:
     assert "must be at least three characters" in str(short_failure.value)
 
 
-@pytest.mark.requirement(
-    "PS-VALID-003",
-    functionality="validated.label",
-    test_type="negative",
-)
+# COVERS FR-2.3 | negative
 def test_a_failure_is_prefixed_with_the_attribute_name_by_default() -> None:
     """Verify the attribute name labels the rule's own message."""
     with pytest.raises(ValidationError, match=r"^text must not be blank$"):
         Label("")
 
 
-@pytest.mark.requirement(
-    "PS-VALID-003",
-    functionality="validated.label",
-    test_type="edge",
-)
+# COVERS FR-2.3 | edge
 def test_an_explicit_label_replaces_the_attribute_name() -> None:
     """Verify a declared label is used in place of the attribute name."""
     with pytest.raises(ValidationError, match=r"^note body must not be blank$"):
         Note("")
 
 
-@pytest.mark.requirement(
-    "PS-VALID-004",
-    functionality="validated.frozen",
-    test_type="invariant",
-)
+# COVERS FR-2.4 | property
 def test_values_are_stored_on_frozen_instances() -> None:
     """Verify a frozen owner, which rejects ordinary assignment, still stores values."""
     first = Label("first value")
@@ -145,11 +117,7 @@ def test_values_are_stored_on_frozen_instances() -> None:
     assert second.text == "second value"
 
 
-@pytest.mark.requirement(
-    "PS-VALID-005",
-    functionality="validated.class_access",
-    test_type="edge",
-)
+# COVERS FR-2.5 | edge
 def test_class_access_returns_the_descriptor() -> None:
     """Verify reading the attribute from the class exposes the descriptor."""
     descriptor = Label.text

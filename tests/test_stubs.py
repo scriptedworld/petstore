@@ -24,11 +24,7 @@ def _drain(produced: object) -> list[object]:
     return list(produced)
 
 
-@pytest.mark.requirement(
-    "PS-STUB-001",
-    functionality="stub.script",
-    test_type="positive",
-)
+# COVERS FR-3.1 | positive
 def test_links_are_consumed_in_declaration_order() -> None:
     """Verify successive calls take successive links."""
     stub = Stub().returns("first").returns("second")
@@ -37,11 +33,7 @@ def test_links_are_consumed_in_declaration_order() -> None:
     assert stub() == "second"
 
 
-@pytest.mark.requirement(
-    "PS-STUB-002",
-    functionality="stub.outcomes",
-    test_type="positive",
-)
+# COVERS FR-3.2 | positive
 def test_a_returns_link_produces_its_value() -> None:
     """Verify a scripted value is handed back unchanged."""
     sentinel = object()
@@ -49,11 +41,7 @@ def test_a_returns_link_produces_its_value() -> None:
     assert Stub().returns(sentinel)() is sentinel
 
 
-@pytest.mark.requirement(
-    "PS-STUB-002",
-    functionality="stub.outcomes",
-    test_type="negative",
-)
+# COVERS FR-3.2 | negative
 def test_a_raises_link_accepts_a_type_or_an_instance() -> None:
     """Verify both spellings of a scripted exception are raised."""
     stub = Stub().raises(TimeoutError).raises(ValueError("boom"))
@@ -65,11 +53,7 @@ def test_a_raises_link_accepts_a_type_or_an_instance() -> None:
         stub()
 
 
-@pytest.mark.requirement(
-    "PS-STUB-003",
-    functionality="stub.generators",
-    test_type="positive",
-)
+# COVERS FR-3.3 | positive
 def test_consecutive_yield_links_build_one_iterator() -> None:
     """Verify yields and yields_from accumulate into a single call."""
     stub = Stub().yields(1).yields_from([2, 3]).yields(4)
@@ -77,11 +61,7 @@ def test_consecutive_yield_links_build_one_iterator() -> None:
     assert _drain(stub()) == [1, 2, 3, 4]
 
 
-@pytest.mark.requirement(
-    "PS-STUB-003",
-    functionality="stub.generators",
-    test_type="edge",
-)
+# COVERS FR-3.3 | edge
 def test_a_returns_link_closes_an_open_generator() -> None:
     """Verify a later yield link starts a new call rather than extending the last."""
     stub = Stub().yields("a").returns(None).yields("b")
@@ -91,11 +71,7 @@ def test_a_returns_link_closes_an_open_generator() -> None:
     assert _drain(stub()) == ["b"]
 
 
-@pytest.mark.requirement(
-    "PS-STUB-004",
-    functionality="stub.exhaustion",
-    test_type="negative",
-)
+# COVERS FR-3.4 | negative
 def test_calling_past_the_script_raises() -> None:
     """Verify an unscripted call fails rather than repeating the last link."""
     stub = Stub(name="fetch").returns(1)
@@ -105,11 +81,7 @@ def test_calling_past_the_script_raises() -> None:
         stub()
 
 
-@pytest.mark.requirement(
-    "PS-STUB-004",
-    functionality="stub.exhaustion",
-    test_type="edge",
-)
+# COVERS FR-3.4 | edge
 def test_an_unscripted_call_is_still_recorded() -> None:
     """Verify history survives the failure so it can be inspected afterwards."""
     stub = Stub()
@@ -121,11 +93,7 @@ def test_an_unscripted_call_is_still_recorded() -> None:
     assert stub.calls[0].args == ("evidence",)
 
 
-@pytest.mark.requirement(
-    "PS-STUB-005",
-    functionality="stub.history",
-    test_type="positive",
-)
+# COVERS FR-3.5 | positive
 def test_arguments_are_recorded_for_each_call() -> None:
     """Verify positional and keyword arguments are captured."""
     stub = Stub().returns(None).returns(None)
@@ -138,11 +106,7 @@ def test_arguments_are_recorded_for_each_call() -> None:
     assert stub.calls[1].args == ("two",)
 
 
-@pytest.mark.requirement(
-    "PS-STUB-005",
-    functionality="stub.history",
-    test_type="invariant",
-)
+# COVERS FR-3.5 | property
 def test_the_call_count_matches_the_recorded_calls() -> None:
     """Verify the counter and the history never disagree."""
     stub = Stub().returns(None).returns(None)
@@ -153,11 +117,7 @@ def test_the_call_count_matches_the_recorded_calls() -> None:
         assert stub.call_count == len(stub.calls) == expected_count
 
 
-@pytest.mark.requirement(
-    "PS-STUB-006",
-    functionality="stub.signature",
-    test_type="positive",
-)
+# COVERS FR-3.6 | positive
 def test_a_declared_signature_binds_arguments_to_names() -> None:
     """Verify both signature sources bind arguments to parameter names."""
     named = Stub(parameters=["path"]).returns(None)
@@ -170,11 +130,7 @@ def test_a_declared_signature_binds_arguments_to_names() -> None:
     assert copied.calls[0].bound_arguments == {"path": "beta", "retries": 3}
 
 
-@pytest.mark.requirement(
-    "PS-STUB-012",
-    functionality="stub.typed",
-    test_type="positive",
-)
+# COVERS FR-3.12 | positive
 def test_a_stub_built_from_a_callable_stands_in_where_it_is_typed() -> None:
     """Verify a stub takes its callable's types, so a typed seam accepts it.
 
@@ -189,22 +145,14 @@ def test_a_stub_built_from_a_callable_stands_in_where_it_is_typed() -> None:
     assert stub.calls[0].bound_arguments == {"path": "gamma"}
 
 
-@pytest.mark.requirement(
-    "PS-STUB-006",
-    functionality="stub.signature",
-    test_type="negative",
-)
+# COVERS FR-3.6 | negative
 def test_the_two_signature_sources_are_mutually_exclusive() -> None:
     """Verify declaring both sources is rejected at construction."""
     with pytest.raises(ValueError, match=r"mutually exclusive"):
         Stub(example, parameters=["path"])
 
 
-@pytest.mark.requirement(
-    "PS-STUB-006",
-    functionality="stub.signature",
-    test_type="edge",
-)
+# COVERS FR-3.6 | edge
 def test_without_a_signature_no_arguments_are_bound() -> None:
     """Verify an undeclared signature records no binding and accepts anything."""
     stub = Stub().returns(None)
@@ -214,11 +162,7 @@ def test_without_a_signature_no_arguments_are_bound() -> None:
     assert stub.calls[0].bound_arguments is None
 
 
-@pytest.mark.requirement(
-    "PS-STUB-007",
-    functionality="stub.always",
-    test_type="positive",
-)
+# COVERS FR-3.7 | positive
 def test_always_repeats_the_final_link_for_every_later_call() -> None:
     """Verify earlier links play once and the repeating link never runs out."""
     stub = Stub().returns("warming up").returns("ready").always()
@@ -226,11 +170,7 @@ def test_always_repeats_the_final_link_for_every_later_call() -> None:
     assert [stub() for _ in range(4)] == ["warming up", "ready", "ready", "ready"]
 
 
-@pytest.mark.requirement(
-    "PS-STUB-007",
-    functionality="stub.always",
-    test_type="edge",
-)
+# COVERS FR-3.7 | edge
 def test_a_repeated_generator_or_raise_link_behaves_the_same_every_call() -> None:
     """Verify a repeated generator is fresh each call and a repeated raise keeps raising."""
     producing = Stub().yields(1).yields_from([2, 3]).always()
@@ -243,11 +183,7 @@ def test_a_repeated_generator_or_raise_link_behaves_the_same_every_call() -> Non
             failing()
 
 
-@pytest.mark.requirement(
-    "PS-STUB-007",
-    functionality="stub.always",
-    test_type="negative",
-)
+# COVERS FR-3.7 | negative
 def test_always_rejects_an_empty_script_and_any_later_link() -> None:
     """Verify always needs something to repeat and nothing may follow it."""
     with pytest.raises(ValueError, match=r"needs a preceding link"):
@@ -272,11 +208,7 @@ class FakeClock:
         return self.now
 
 
-@pytest.mark.requirement(
-    "PS-STUB-010",
-    functionality="stub.times",
-    test_type="positive",
-)
+# COVERS FR-3.10 | positive
 def test_times_covers_a_counted_run_of_calls() -> None:
     """Verify a counted link plays its count before the next link applies."""
     stub = Stub().returns("not ready").times(3).returns("ready")
@@ -286,11 +218,7 @@ def test_times_covers_a_counted_run_of_calls() -> None:
         stub()
 
 
-@pytest.mark.requirement(
-    "PS-STUB-010",
-    functionality="stub.times",
-    test_type="edge",
-)
+# COVERS FR-3.10 | edge
 def test_a_counted_generator_link_builds_a_fresh_iterator_each_call() -> None:
     """Verify each counted call of a generator link produces the whole sequence."""
     stub = Stub().yields_from([1, 2]).times(2).returns("done")
@@ -300,11 +228,7 @@ def test_a_counted_generator_link_builds_a_fresh_iterator_each_call() -> None:
     assert stub() == "done"
 
 
-@pytest.mark.requirement(
-    "PS-STUB-010",
-    functionality="stub.times",
-    test_type="negative",
-)
+# COVERS FR-3.10 | negative
 def test_times_rejects_bad_counts_missing_links_and_second_modifiers() -> None:
     """Verify times needs a positive count, a link, and an unmodified link."""
     with pytest.raises(ValueError, match=r"at least one"):
@@ -317,11 +241,7 @@ def test_times_rejects_bad_counts_missing_links_and_second_modifiers() -> None:
         Stub().returns(1).times(2).always()
 
 
-@pytest.mark.requirement(
-    "PS-STUB-011",
-    functionality="stub.over",
-    test_type="positive",
-)
+# COVERS FR-3.11 | positive
 def test_over_covers_every_call_inside_its_window() -> None:
     """Verify a timed link applies until its window closes, then the next link does."""
     clock = FakeClock()
@@ -335,11 +255,7 @@ def test_over_covers_every_call_inside_its_window() -> None:
     assert outcomes == ["warming", "warming", "warming", "up"]
 
 
-@pytest.mark.requirement(
-    "PS-STUB-011",
-    functionality="stub.over",
-    test_type="edge",
-)
+# COVERS FR-3.11 | edge
 def test_a_timed_window_opens_at_the_first_call_that_reaches_it() -> None:
     """Verify the window is measured from arrival, and a closed final window exhausts."""
     clock = FakeClock()
@@ -355,11 +271,7 @@ def test_a_timed_window_opens_at_the_first_call_that_reaches_it() -> None:
         stub()
 
 
-@pytest.mark.requirement(
-    "PS-STUB-011",
-    functionality="stub.over",
-    test_type="negative",
-)
+# COVERS FR-3.11 | negative
 def test_over_rejects_a_duration_that_is_not_positive() -> None:
     """Verify an empty or negative window is refused at declaration."""
     with pytest.raises(ValueError, match=r"positive duration"):
@@ -369,11 +281,7 @@ def test_over_rejects_a_duration_that_is_not_positive() -> None:
         Stub().returns(1).over(seconds=-5)
 
 
-@pytest.mark.requirement(
-    "PS-STUB-011",
-    functionality="stub.over",
-    test_type="positive",
-)
+# COVERS FR-3.11 | positive
 def test_the_default_clock_is_the_real_monotonic_clock() -> None:
     """Verify a stub built without a clock still serves a timed link."""
     stub = Stub().returns("within the hour").over(hours=1)

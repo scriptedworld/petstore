@@ -13,8 +13,8 @@ Generated stubs are passed through the seams described in
 [`function-boundaries.md`](../architecture/function-boundaries.md), either as
 one argument or as entries in a function policy.
 
-The canonical requirements are in
-[`stub.requirements.yaml`](stub.requirements.yaml).
+Its requirements, `FR-4.x`, are in
+[`docs/REQUIREMENTS/generate/`](../REQUIREMENTS/generate/).
 
 ## Configured behavior
 

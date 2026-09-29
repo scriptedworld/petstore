@@ -22,8 +22,6 @@ files use YAML, not TOML or JSON.
 
 Mandatory ecosystem formats remain in their required native representation.
 Examples include `pyproject.toml`, `uv.lock`, and `.devcontainer/devcontainer.json`.
-Requirement registries are named for their module, such as
-`docs/modules/iteration.requirements.yaml`.
 
 ## First-time setup
 
@@ -101,7 +99,7 @@ Frequently used recipes:
 | `test` | Run the suite without coverage, for a fast inner loop. |
 | `coverage` | Run the suite with 100% line and branch coverage enforced. |
 | `fix` | Format files and apply safe Ruff fixes. |
-| `requirements` | Validate requirement-to-test traceability and emit canonical YAML evidence. |
+| `requirements` | Check that every test cites a requirement and every settled requirement has a test. |
 | `leak-scan` | Run toolbox's secrets jig through bolt. |
 | `wording` | Check files and recent commits against the writing standard's wording. |
 | `hooks` | Install the configured `pre-commit` and `commit-msg` hooks. |
@@ -158,33 +156,32 @@ in automation when continuous integration is added.
 
 ## Module documentation and requirements
 
-Every production module has a Markdown guide and a canonical
-`*.requirements.yaml` registry under `docs/modules/`. YAML is the sole normative
-source for requirement statements and lifecycle metadata. Requirement IDs are
-never deleted or reused.
+Every production module has a Markdown guide under `docs/modules/`, and its
+requirements are under `docs/REQUIREMENTS/<module>/`, one file per requirement
+holding a single table row. [`REQUIREMENTS/README.md`](REQUIREMENTS/README.md)
+says how the IDs are numbered. An ID is never deleted or reused: a retired
+requirement stays, renamed to end `.retired.md`.
 
-Every test uses `pytest.mark.requirement` to record:
+Every test carries a comment directly above it naming what it covers and how:
 
-- one or more covered requirement IDs;
-- the invoked functionality;
-- the test classification, such as `positive`, `negative`, `edge`, `property`,
-  `invariant`, or `regression`.
+```python
+# COVERS FR-1.2, FR-1.13 | positive
+def test_shortest_matches_python_zip() -> None:
+```
+
+The kind is one of `positive`, `negative`, `edge`, `property` or `regression`.
 
 When adding or changing behavior:
 
-1. Add a requirement to the canonical YAML registry first. Never change the
-   meaning of an active requirement; retire it and allocate a new ID instead.
-2. Implement the behavior using the functional boundary-composition standard
-   when a genuine seam is required.
-3. Add tests with complete requirement metadata.
+1. Add the requirement first. Never change the meaning of an active one;
+   retire it and add a new ID instead.
+2. Implement the behavior, with a seam where a boundary needs one.
+3. Add tests carrying `COVERS` comments.
 4. Run `uv run just checks`.
-5. Confirm that `uv run just requirements` reports every active requirement,
-   required test classification, and declared functionality as covered.
 
-The checker and its stable finding codes are documented in
-[`modules/traceability.md`](modules/traceability.md). It statically parses tests
-without importing or executing them and emits the canonical tool-result format
-documented in [`modules/tool-output.md`](modules/tool-output.md).
+`just requirements` runs toolbox's `bin/test-traceability.py` from a toolbox
+checkout beside this tree. It fails a test that cites nothing or cites an
+unknown or retired ID, and a settled requirement no test cites.
 
 Mechanical traceability proves that the declared evidence is complete and
 internally consistent. It does not prove that the assertions establish the

@@ -64,20 +64,8 @@ Validation applies to later assignment exactly as it does to construction, so a
 mutable owner cannot be moved into an invalid state after the fact. Reading the
 attribute from the class rather than an instance returns the descriptor itself.
 
-## Canonical requirements
+## Requirements
 
-[`validation.requirements.yaml`](validation.requirements.yaml) is the sole
-normative source for this module's requirements. Requirement statements must
-not be duplicated or edited in this Markdown file.
-
-The YAML registry is append-only after requirements become active. IDs are
-never deleted or reused; replaced behavior is retained with `status: retired`
-and linked to its replacement through `superseded_by`.
-
-| ID | Status | Title |
-| --- | --- | --- |
-| `PS-VALID-001` | Active | Validation on assignment |
-| `PS-VALID-002` | Active | Rule sequencing |
-| `PS-VALID-003` | Active | Failure labelling |
-| `PS-VALID-004` | Active | Frozen owners |
-| `PS-VALID-005` | Active | Class access |
+[`docs/REQUIREMENTS/validation/`](../REQUIREMENTS/validation/) holds this
+module's requirements, `FR-2.x`, one file each. Tests cite them with a
+`# COVERS <ids> | <kind>` comment directly above the test.
