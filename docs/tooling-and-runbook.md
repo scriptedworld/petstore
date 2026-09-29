@@ -58,10 +58,16 @@ repository has. Pre-commit hooks and documentation call `just` recipes, never
 individual tools. My projects share the recipe names, so the same words work in
 every tree.
 
-`just` itself is pinned in `uv.lock` as the `rust-just` development dependency.
-`uv run just <recipe>` therefore needs nothing installed beyond UV, and behaves
-identically on a host, in the Dev Container, and in automation. Where `just` is
-installed system-wide, `just <recipe>` is the same command.
+`just` itself is pinned in `uv.lock` as the `rust-just` development dependency,
+so `uv run just <recipe>` needs nothing installed beyond UV for the recipes
+that run through uv. Where `just` is installed system-wide, `just <recipe>` is
+the same command.
+
+`checks` needs more: a [toolbox](https://github.com/scriptedworld/toolbox)
+checkout beside this tree, [bolt](https://github.com/scriptedworld/bolt), and
+the tools the jigs call on `PATH` (ruff, mypy, pylint, complexipy, vulture,
+interrogate, bandit, gitleaks, detect-secrets). bolt's `docs/runbook.md` says
+how to build it and install them.
 
 The recipes are layered through imports, and the first layer to define a recipe
 wins:
@@ -73,17 +79,16 @@ wins:
 | `just/base.just` | toolbox, vendored | The ten standard recipes, each a working default or a no-op that succeeds. |
 
 `just/base.just` and `bolt.secrets.yaml` are copies of
-[toolbox](https://github.com/scriptedworld/toolbox)'s, committed so a clone
-needs nothing beside it. Edit neither here. `just vendor` replaces both with
-toolbox's `main`, and `git diff` shows what changed upstream.
+[toolbox](https://github.com/scriptedworld/toolbox)'s, committed so the
+Justfile loads without a toolbox checkout. Edit neither here. `just vendor`
+replaces both with toolbox's `main`, and `git diff` shows what changed
+upstream.
 
-`leak-scan` runs the secrets jig through
-[bolt](https://github.com/scriptedworld/bolt), with `gitleaks` and
-`detect-secrets` on `PATH`. bolt's `docs/runbook.md` says how to build it.
-
-`wording` runs toolbox's `bin/voice-tells.py` from a toolbox checkout beside
-this tree; `just toolbox=/path/to/toolbox wording` names another. It reads
-every file, and every commit after the SHA in `.voice-review-start`.
+`checks` runs the `python-std-quality` jig from the toolbox checkout, and
+`wording` and `requirements` run toolbox's `bin/voice-tells.py` and
+`bin/test-traceability.py` from it; `just toolbox=/path/to/toolbox checks`
+names another. `leak-scan` runs the vendored secrets jig. `wording` reads every
+file, and every commit after the SHA in `.voice-review-start`.
 
 List every recipe:
 
@@ -95,9 +100,9 @@ Frequently used recipes:
 
 | Recipe | Purpose |
 | --- | --- |
-| `checks` | Run every quality gate, cheapest first, stopping at the first failure. |
-| `test` | Run the suite without coverage, for a fast inner loop. |
-| `coverage` | Run the suite with 100% line and branch coverage enforced. |
+| `checks` | Run the whole gate: the Python jig, wording, traceability and secrets. |
+| `test` | Run the suite, for a fast inner loop. |
+| `coverage` | Run the suite under coverage and report it per file. |
 | `fix` | Format files and apply safe Ruff fixes. |
 | `requirements` | Check that every test cites a requirement and every settled requirement has a test. |
 | `leak-scan` | Run toolbox's secrets jig through bolt. |
@@ -114,22 +119,31 @@ authoritative final result.
 
 ## Quality gate coverage
 
-| Gate | `src/` | `tests/` | Policy |
-| --- | --- | --- | --- |
-| Ruff formatting and lint | Yes | Yes | Maximum line length 150; no unapproved inline suppressions. |
-| Mypy | Yes | Yes | Strict mode. |
-| Pylint | Yes | Yes | Any finding fails; averaged scoring is disabled. |
-| Complexipy | Yes | Yes | Maximum cognitive complexity 15 per function. |
-| Nesting checks | Yes | Yes | Maximum three nested blocks. |
-| Interrogate | Yes | No | Production documentation coverage must be 100%. |
-| Vulture | Yes | Yes | Dead-code checks use 100% confidence. |
-| Bandit | Yes | No | Production security findings fail the gate. |
-| Pytest and Coverage | Produces coverage | Executes tests | Production line and branch coverage must each reach 100%. |
-| Wording (`wording`) | Yes | Yes | Every tracked text file and every commit after `.voice-review-start`; any finding fails. |
-| Secrets jig (`leak-scan`) | Yes | Yes | Run through bolt over the whole repository; the verdict is read from bolt's `result.yaml`, never its exit status. |
+The Python checks are toolbox's `python-std-quality` jig, and its thresholds
+are the ones that apply; `bolt.python-std-quality.yaml` in toolbox states each
+one beside the task that holds it. In outline:
 
-Quality thresholds apply to each finding, function, or file as appropriate.
-Scores must not be averaged across a file to hide a local failure.
+| Task | Policy |
+| --- | --- |
+| `format`, `lint` | ruff formatting, and the ruff rules `pyproject.toml` selects (all of them). |
+| `types` | mypy, strict as `pyproject.toml` sets it. |
+| `analyse` | pylint's duplicate code, and no block nested past 4. |
+| `cognitive`, `complexity` | cognitive complexity 15; cyclomatic 15, 5 arguments, 60 statements. |
+| `dead-code` | nothing unreferenced above 80% confidence. |
+| `docstrings` | at least 80% of public objects documented. |
+| `security`, `security-tests` | bandit over the source, and over the tests except `assert`. |
+| `tests` | the suite under coverage, each file at 80% of lines and 80% of branches. |
+
+Beside the jig:
+
+| Recipe | Policy |
+| --- | --- |
+| `wording` | Every tracked text file and every commit after `.voice-review-start`; any finding fails. |
+| `requirements` | Every test cites a requirement, and every settled requirement has a test. |
+| `leak-scan` | The secrets jig over the whole repository and its history. |
+
+Each bolt run's verdict is `success` in the `result.yaml` it names, never its
+exit status. Thresholds apply per file or per function, never averaged.
 
 ## Pre-commit and commits
 

@@ -16,10 +16,7 @@ or, with pip, `pip install git+https://github.com/scriptedworld/petstore`.
 
 ## Lazy zip
 
-The module guide is
-[`docs/modules/iteration.md`](docs/modules/iteration.md), and its requirements
-are registered in
-[`docs/modules/iteration.requirements.yaml`](docs/modules/iteration.requirements.yaml).
+The module guide is [`docs/modules/iteration.md`](docs/modules/iteration.md).
 
 `petstore.zip_iter` combines iterables lazily and supports four termination
 policies:
@@ -59,10 +56,7 @@ result is single-pass and does not cache input values.
 
 ## Validated attributes
 
-The module guide is
-[`docs/modules/validation.md`](docs/modules/validation.md), and its requirements
-are registered in
-[`docs/modules/validation.requirements.yaml`](docs/modules/validation.requirements.yaml).
+The module guide is [`docs/modules/validation.md`](docs/modules/validation.md).
 
 `petstore.Validated` checks a value at the moment it is assigned, so a
 constructed object is a valid one. A rule is an ordinary function: value in,
@@ -151,10 +145,7 @@ is the pattern, including several seams bound by a factory, and
 
 ## Path locks
 
-The module guide is
-[`docs/modules/locking.md`](docs/modules/locking.md), and its requirements are
-registered in
-[`docs/modules/locking.requirements.yaml`](docs/modules/locking.requirements.yaml).
+The module guide is [`docs/modules/locking.md`](docs/modules/locking.md).
 
 `petstore.locked` holds an exclusive lock named for a path, honored across
 processes:
@@ -181,12 +172,12 @@ uv sync
 uv run just checks
 ```
 
-`checks` is the whole gate: formatting, lint, strict typing, complexity,
-docstrings, dead code, bandit, wording, requirement traceability, the suite at
-100% line and branch coverage, and a secrets scan. The wording check needs a
-[toolbox](https://github.com/scriptedworld/toolbox) checkout beside this tree,
-and the scan needs [bolt](https://github.com/scriptedworld/bolt), `gitleaks`
-and `detect-secrets` on `PATH`. `uv run just --list` shows every recipe.
+`checks` is the whole gate: toolbox's Python jig (formatting, lint, strict
+typing, complexity, docstrings, dead code, bandit, and the suite under
+per-file coverage), wording, requirement traceability and a secrets scan. It
+needs a [toolbox](https://github.com/scriptedworld/toolbox) checkout beside
+this tree, [bolt](https://github.com/scriptedworld/bolt), and the checkers on
+`PATH`; the runbook lists them. `uv run just --list` shows every recipe.
 
 [`docs/tooling-and-runbook.md`](docs/tooling-and-runbook.md) covers the Dev
 Container, the recipes, the commit hooks and troubleshooting. Nothing is

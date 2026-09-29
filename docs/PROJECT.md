@@ -44,12 +44,15 @@ requirements carried before.
 
     just checks
 
-Ruff format and lint, mypy strict, pylint, complexipy, interrogate, vulture,
-bandit, requirement traceability, pytest at 100% line and branch coverage, and
-bolt's secrets scan, cheapest first. The Python tools run through `uv run` at
-the version `uv.lock` pins; wording and traceability run toolbox's scripts. The
-secrets verdict is `success` in the bolt run's
-`result.yaml`, which `just checks` prints the path of.
+toolbox's `python-std-quality` jig through bolt, then toolbox's wording and
+traceability scripts, then the secrets jig. Each bolt verdict is `success` in
+the `result.yaml` whose path `just checks` prints. The thresholds are the
+jig's, stated in toolbox's `bolt.python-std-quality.yaml`; petstore sets none
+of its own.
+
+`common-quality` should replace the two direct script calls, and waits on
+toolbox shipping a definitions file that points it at `docs/REQUIREMENTS`:
+bolt reads definitions only from the config directory.
 
 Run `just checks` and commit with the sandbox off: inside it ruff fails reading
 the sandbox's device mounts, and git records the host identity as author.
@@ -57,8 +60,9 @@ the sandbox's device mounts, and git records the host identity as author.
 ## How it fits against its siblings
 
 `just/base.just` and `bolt.secrets.yaml` are vendored from `toolbox` and
-refreshed by `just vendor`. `wording` and `requirements` need a toolbox
-checkout beside this tree, and `leak-scan` needs `bolt` on `PATH`. Nothing installs petstore yet.
+refreshed by `just vendor`. The gate runs toolbox's jigs and scripts from a
+checkout beside this tree, and needs `bolt` on `PATH`. Nothing installs
+petstore yet.
 
 ## What is decided, and what is open
 

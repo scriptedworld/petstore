@@ -4,34 +4,24 @@
 # runner. Where a recipe does one of base.just's ten jobs, it takes that name,
 # so the whole gate is `checks` here as it is in every tree.
 #
-# Every recipe runs through uv. petstore's tools are pinned in uv.lock, and a
-# bare `mypy` or `pytest` from PATH is a different version against a different
-# interpreter. The one exception is `leak-scan`, which base.just supplies and
-# which runs bolt, invoking the secrets checkers from PATH by design.
+# The gate is toolbox's jigs, run through bolt from a toolbox checkout beside
+# this tree, so every step reports a result envelope and its verdict is read
+# from the run's result.yaml. `just toolbox=/path/to/toolbox checks` names
+# another checkout. The jigs call their tools from PATH; uv.lock pins the same
+# tools for the recipes below.
 #
-# The order in `checks` is cheapest first, so a formatting slip fails in a
-# second, not after the whole suite. just stops at the first failing
-# line, so the first failure is the one reported.
+# `wording` and `requirements` run toolbox's scripts directly, and `leak-scan`
+# runs the secrets jig, because the common-quality jig that holds all three
+# takes its definitions only from toolbox's own directory and so cannot yet be
+# told where petstore keeps its requirements.
+toolbox := "../toolbox"
 
-# everything: formatting, lint, types, analysis, wording, traceability, coverage, secrets
+# everything: the Python jig, wording, traceability and secrets
 checks:
-    @just format-check
-    @just lint
-    @just typecheck
-    @just pylint
-    @just complexity
-    @just docs
-    @just dead-code
-    @just security
+    @just _verdict python-std-quality --config-dir {{ toolbox }}
     @just wording
     @just requirements
-    @just coverage
     @just leak-scan
-
-# The wording check is toolbox's bin/voice-tells.py, run from a toolbox
-# checkout beside this tree; `just toolbox=/path/to/toolbox wording` names
-# another. Commits after the SHA in .voice-review-start are read as well.
-toolbox := "../toolbox"
 
 # the writing standard's wording, over every file and every commit since the start SHA
 wording:
@@ -41,17 +31,14 @@ wording:
 wording-commit-msg file:
     python3 {{ toolbox }}/bin/voice-tells.py --commit-msg-filename {{ file }}
 
-# `test` is the suite without coverage. pyproject's pytest options always measure and
-# enforce coverage, so `test` switches that off to be the fast inner loop, and
-# `coverage` is the run that holds the 100% line and branch minimum.
-
 # the suite
 test:
-    uv run pytest --no-cov
-
-# the suite with coverage, and the minimum enforced
-coverage:
     uv run pytest
+
+# the suite under coverage, reported per file; the jig holds the minimum
+coverage:
+    uv run coverage run -m pytest -q
+    uv run coverage report
 
 # formatting verified, nothing written
 format-check:
@@ -61,10 +48,6 @@ format-check:
 format:
     uv run ruff format .
 
-# ruff lint, nothing written
-lint:
-    uv run ruff check .
-
 # ruff lint with its safe fixes written
 lint-fix:
     uv run ruff check --fix .
@@ -73,30 +56,6 @@ lint-fix:
 fix:
     @just format
     @just lint-fix
-
-# strict static type checking
-typecheck:
-    uv run mypy
-
-# pylint over source and tests, any finding fails
-pylint:
-    uv run pylint src tests
-
-# per-function cognitive complexity, at most 15
-complexity:
-    uv run complexipy --max-complexity-allowed 15 src tests
-
-# production docstring coverage, 100% required
-docs:
-    uv run interrogate src
-
-# unused production and test code
-dead-code:
-    uv run vulture
-
-# static security checks on production code
-security:
-    uv run bandit -c pyproject.toml -r src
 
 # every test cites a requirement and every settled requirement has a test
 requirements:

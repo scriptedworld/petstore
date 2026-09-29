@@ -23,12 +23,12 @@ dev = [
     "bandit>=1.8.6",
     "commitizen>=4.18.0",
     "complexipy>=4.0.2",
+    "coverage>=7.10",
     "interrogate>=1.7.0",
     "mypy>=1.17.1",
     "pre-commit>=4.6.2",
     "pylint>=3.3.8",
     "pytest>=8.4.1",
-    "pytest-cov>=6.2.1",
     "ruff>=0.12.10",
     "rust-just==1.58.0",
     "vulture>=2.14",
@@ -46,19 +46,16 @@ allowed_prefixes = []
 addopts = [
     "--strict-config",
     "--strict-markers",
-    "--cov=petstore",
-    "--cov-branch",
-    "--cov-report=term-missing",
-    "--cov-fail-under=100",
 ]
 testpaths = ["tests"]
 
+# The gate's python-std-quality jig runs the suite under coverage and judges
+# each file at 80% of lines and branches; no threshold is set here.
 [tool.coverage.run]
 branch = true
 source = ["petstore"]
 
 [tool.coverage.report]
-fail_under = 100
 show_missing = true
 skip_covered = false
 
@@ -82,9 +79,6 @@ ignore = [
 [tool.ruff.lint.mccabe]
 max-complexity = 15
 
-[tool.ruff.lint.pylint]
-max-nested-blocks = 3
-
 [tool.mypy]
 python_version = "3.10"
 strict = true
@@ -104,14 +98,10 @@ disable = [
 [tool.pylint.format]
 max-line-length = 150
 
-[tool.pylint.design]
-max-nested-blocks = 3
-
 [tool.pylint.reports]
 score = false
 
 [tool.interrogate]
-fail-under = 100
 exclude = ["tests"]
 ignore-init-method = true
 ignore-module = false
@@ -125,10 +115,5 @@ verbose = 1
 
 [tool.vulture]
 exclude = [".venv/"]
-min_confidence = 100
 paths = ["src", "tests"]
 sort_by_size = true
-
-[tool.bandit]
-recursive = true
-targets = ["src"]
