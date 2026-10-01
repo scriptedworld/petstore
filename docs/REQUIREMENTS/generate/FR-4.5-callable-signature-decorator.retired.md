@@ -6,5 +6,3 @@
 
 Retired: Replaced the object-based decorator with generate(signature_from=...).
 Superseded by FR-4.10.
-
-Formerly PS-TEST-005.

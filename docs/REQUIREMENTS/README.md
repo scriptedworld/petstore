@@ -10,8 +10,8 @@ above the test, and toolbox's `test-traceability.py` checks both directions.
 
 ## Earlier IDs
 
-Requirements were first kept as YAML registries under `docs/modules/`, with
-`PS-` IDs. Each maps to its replacement here. The `PS-TRACE` and `PS-OUT`
+A `PS-` ID comes from the YAML registries under `docs/modules/` that this
+directory replaces, and maps to its FR ID below. The `PS-TRACE` and `PS-OUT`
 requirements retired with `petstore.traceability` and `petstore.tool_output`
 and have no replacement.
 

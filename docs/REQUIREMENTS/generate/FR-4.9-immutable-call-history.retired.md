@@ -6,5 +6,3 @@
 
 Retired: Generated functions are disposable; creating another function replaces mutable history-reset behavior.
 Superseded by FR-4.12.
-
-Formerly PS-TEST-009.

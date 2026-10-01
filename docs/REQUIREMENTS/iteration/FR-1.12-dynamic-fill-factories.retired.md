@@ -6,5 +6,3 @@
 
 Retired: User-supplied factory failures are directly testable and do not require an injected resolver seam.
 Superseded by FR-1.15.
-
-Formerly PS-ITER-012.

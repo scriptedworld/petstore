@@ -6,5 +6,3 @@
 
 Retired: Replaced scalar fill behavior with per-input fill specifications.
 Superseded by FR-1.9.
-
-Formerly PS-ITER-005.

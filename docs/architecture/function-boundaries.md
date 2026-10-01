@@ -104,9 +104,6 @@ def test_any_other_write_failure_still_raises() -> None:
         save_report(Path("report.txt"), "body", writer=writer)
 ```
 
-The stub does one thing: it raises the failure the test exists for. It does
-not imitate a filesystem.
-
 ## Several seams: a composition factory
 
 When an operation has several boundary functions that vary together, a
@@ -169,8 +166,7 @@ logic is not a seam.
 A mock or a patch replaces something the code under test did not offer to have
 replaced, such as a module attribute or a method on a class. A stub passed
 through a seam replaces only what the function's own signature says may be
-passed. Patching a module's internals is still patching, and a seam is how to
-avoid needing it.
+passed.
 
 ## Adoption checklist
 

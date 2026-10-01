@@ -18,10 +18,9 @@ declaration rather than a method:
     class Reading:
         count: Validated[int] = RULES
 
-Validation runs inside ``__init__`` as well as on later assignment, because a
-dataclass constructor assigns through the ordinary attribute machinery and that
-machinery honours a data descriptor. A constructed object is therefore a valid
-one, and nothing downstream needs to re-check it.
+Validation runs inside ``__init__`` as well as on later assignment, so a
+constructed object is a valid one: a dataclass constructor assigns through the
+ordinary attribute machinery, and that machinery honours a data descriptor.
 
 One instance belongs to one attribute of one class. Python calls
 ``__set_name__`` for each class body the instance appears in, so sharing a

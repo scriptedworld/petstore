@@ -180,5 +180,4 @@ this tree, [bolt](https://github.com/scriptedworld/bolt), and the checkers on
 `PATH`; the runbook lists them. `uv run just --list` shows every recipe.
 
 [`docs/tooling-and-runbook.md`](docs/tooling-and-runbook.md) covers the Dev
-Container, the recipes, the commit hooks and troubleshooting. Nothing is
-suppressed and nothing is mocked.
+Container, the recipes, the commit hooks and troubleshooting.

@@ -30,8 +30,8 @@ by the stub's clock. Tests should pass their own clock rather than waiting, so
 that time advances only when the test says it does.
 
 Calling a stub more times than the script describes raises
-``StubExhaustedError`` rather than silently repeating: a double that keeps
-working past its script hides the very drift a test exists to catch. Every
+``StubExhaustedError`` rather than silently repeating, so code that calls its
+boundary more often than the test expects fails the test. Every
 invocation is recorded whether or not it had a scripted outcome, so ``calls``
 can be inspected after a failure as well as after a success.
 

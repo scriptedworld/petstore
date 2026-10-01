@@ -6,5 +6,3 @@
 
 Retired: Fill-count failures are directly testable and do not require an injected seam.
 Superseded by FR-1.14.
-
-Formerly PS-ITER-011.

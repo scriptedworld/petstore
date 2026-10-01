@@ -4,10 +4,10 @@
 a stub whose script is a single `always()` link. There is one seam double, not
 two, so it carries one call history, one typing and one set of requirements.
 
-It replaced a `generate` in `tests/conftest.py` that returned a plain function
-with attributes set on it. That one could not be installed by another project,
-and it duplicated what `Stub` already recorded. FR-4.6 was retired for
-FR-4.13 when the return type became `Stub`.
+The alternative, a test fixture returning a plain function with attributes set
+on it, cannot be installed by another project and duplicates what `Stub`
+records. FR-4.13 requires the `Stub` return type, and FR-4.6, which required
+the plain function, is retired.
 
 The documentation and the IO seam pattern use `Stub`, and mention `generate`
 where a seam does the same thing on every call.

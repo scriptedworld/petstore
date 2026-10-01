@@ -1,8 +1,5 @@
 # Tooling and project runbook
 
-This document is the operational reference for developing, validating, and
-maintaining petstore.
-
 ## Supported environments
 
 The repository is designed to work in either of these environments:
@@ -112,25 +109,14 @@ Frequently used recipes:
 | `clean` | Remove run directories, caches, and build output. The virtual environment is kept. |
 | `vendor` | Replace the files taken from toolbox with its `main` branch. |
 
-Individual recipes are useful for quick feedback, but `checks` is the
-authoritative final result.
-
 ## Quality gate coverage
 
-The Python checks are toolbox's `python-std-quality` jig, and its thresholds
-are the ones that apply; `bolt.python-std-quality.yaml` in toolbox states each
-one beside the task that holds it. In outline:
-
-| Task | Policy |
-| --- | --- |
-| `format`, `lint` | ruff formatting, and the ruff rules `pyproject.toml` selects (all of them). |
-| `types` | mypy, strict as `pyproject.toml` sets it. |
-| `analyse` | pylint's duplicate code, and no block nested past 4. |
-| `cognitive`, `complexity` | cognitive complexity 15; cyclomatic 15, 5 arguments, 60 statements. |
-| `dead-code` | nothing unreferenced above 80% confidence. |
-| `docstrings` | at least 80% of public objects documented. |
-| `security`, `security-tests` | bandit over the source, and over the tests except `assert`. |
-| `tests` | the suite under coverage, each file at 80% of lines and 80% of branches. |
+The Python checks are toolbox's `python-std-quality` jig: ruff formatting and
+the ruff rules `pyproject.toml` selects, mypy strict as `pyproject.toml` sets
+it, duplication and nesting, complexity, dead code, docstrings, bandit, and the
+suite under per-file line and branch coverage. Its thresholds are the ones that
+apply, and `bolt.python-std-quality.yaml` in toolbox states each beside the
+task that holds it.
 
 Then toolbox's `common-quality` jig:
 
@@ -163,9 +149,6 @@ uv run just commit
 `pre-commit` refuses to install on a machine where git's `core.hooksPath` is set
 globally, because git then reads no repository's `.git/hooks`. The Dev Container
 does not set it, so the hooks install and run there.
-
-Bypassing a local hook does not waive a requirement. The same checks must run
-in automation when continuous integration is added.
 
 ## Module documentation and requirements
 

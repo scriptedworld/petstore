@@ -6,5 +6,3 @@
 
 Retired: The validation path is directly testable and does not require an injected seam.
 Superseded by FR-1.13.
-
-Formerly PS-ITER-008.

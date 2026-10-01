@@ -6,5 +6,3 @@
 
 Retired: Replaced Stub.from_parameters with generate(parameters=...).
 Superseded by FR-4.10.
-
-Formerly PS-TEST-004.
