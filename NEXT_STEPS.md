@@ -15,12 +15,3 @@ only in a local snapshot. It is not kept. Compared with `diff -ru` over
 `src`, `tests` and `docs`, the snapshot's working tree holds nothing this
 tree lacks, and its one extra file, `tests/conftest.py`, is the `generate` that
 `petstore.stubs` holds. The two commits were not compared individually.
-
-## Working here under the sandbox
-
-- Commit with the sandbox off. Inside it git cannot read the global config and
-  records the host identity as author, which would go public. Check with
-  `git log -1 --format=%ae`.
-- Run `just checks` with the sandbox off. The sandbox mounts character devices
-  over protected paths such as `.claude/loop.md`, and `ruff format --check`
-  fails reading them with `Permission denied`.

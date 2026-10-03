@@ -58,8 +58,8 @@ the sandbox's device mounts, and git records the host identity as author.
 
 `just/base.just` and `bolt.secrets.yaml` are vendored from `toolbox` and
 refreshed by `just vendor`. The gate runs toolbox's jigs and scripts from a
-checkout beside this tree, and needs `bolt` on `PATH`. Nothing installs
-petstore yet.
+checkout beside this tree, and needs `bolt` on `PATH`. No other project
+installs petstore yet.
 
 ## What is decided, and what is open
 
