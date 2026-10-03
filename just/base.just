@@ -14,8 +14,7 @@
 # 1. It reads the verdict out of result.yaml and never bolt's exit status.
 #    bolt exits 0 whenever it carried a run out, whatever the tools concluded:
 #    a jig with one passing and one failing task writes "success": false into
-#    result.yaml and exits 0. Reading the artifact and not the exit status is
-#    a standing rule here.
+#    result.yaml and exits 0.
 #
 #    bolt's own --result-to-exitcode does make the status carry the verdict,
 #    and is still not used: it collapses a refusal, where no result was
@@ -26,7 +25,6 @@
 #    all. A fixed directory is what is forbidden, because bolt refuses one that
 #    already holds a run, so naming one works exactly once. The default is
 #    unique per run and `clean` removes them.
-#    Every project answering to the same two words is a settled decision.
 #
 # 3. It quotes the path it read. A verdict with no artifact beside it cannot be
 #    checked by whoever reads the output.
@@ -35,20 +33,16 @@
 # definitions, and a recipe cannot add an argument to another recipe's command.
 #
 #     just _verdict go-std-quality --definitions go-std-quality
-#     just _verdict common-quality --definitions skid
+#     just _verdict common-quality --definitions requirements-directory
 #     just _verdict common-quality --config-dir ..        jigs one level up
 #
 # Without the flag, the failure does not look like a missing flag. The
 # placeholder keeps its default and the jig reports a problem in the adopter's
-# own tree: qwark's `entrypoint` stayed `true`, so cover-entrypoint.sh never ran
-# and main.go read 0.0% against an 80% floor. Skid's `requirements` stayed the
-# retired single-file path, so traceability and suppressions both failed. On a
-# fixture, the task passes with the flag and fails without it, and nothing in
-# either message says "definitions".
-#
-# So an adopter hitting this goes and changes their coverage or requirements
-# configuration instead of suspecting this file. qwark and skid both hit it,
-# in different languages, from the same cause.
+# own tree: a coverage task skips the entry point and reads 0% against its
+# floor, or traceability reads a requirements path the project no longer uses.
+# Nothing in either message says "definitions", so an adopter hitting this
+# changes their coverage or requirements configuration instead of suspecting
+# this file.
 _verdict jig *flags:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -111,32 +105,18 @@ install:
 # A clean recipe must not remove anything another process executes.
 #
 # The rule is neither "do not delete bin/" nor "do not delete anything on PATH".
-# It is about who runs the file, because in this estate a project's build output
-# and its deployed artefact are routinely the same file, and the ways a file
-# gets reached are not limited to PATH.
+# It is about who runs the file: a project's build output and its installed
+# artefact can be the same file, and the ways a file gets reached are not
+# limited to PATH.
 #
-# The PATH directory itself can be a symlink into a project tree:
+# The PATH directory itself can be a symlink into a project tree, such as
+# <homedir>/bin, or the directory mise or uv keep their shims in. A clean in
+# that project removing bin/ removes every command reached through it, not one.
 #
-#     ~/bin -> <some project>/bin
-#
-# So a clean in that project removing bin/ removes the entire PATH directory,
-# not one command, and every other project reachable through it goes at the
-# same time. Two of the commands behind such a link are a build gate and a
-# pre-execution hook, and removing the hook changes what every process is
-# permitted to do.
-#
-# Being reachable is not the same as being on PATH. A link in one project
-# pointing into another, invoked by absolute path from a configuration file, is
-# not on PATH at all, and a check that swept PATH would miss it. So the question
-# to ask of a path before deleting it is "does anything execute this", which
-# includes hooks, service units and configuration.
-#
-# infobot's clean once carried `rm -f bin/statusline bin/forget` under the
-# heading "remove build output". Those were deployed artefacts that Claude Code
-# executes on every event, and running `just clean` stopped fifteen status files
-# being written for 25 minutes while every instrument reading them kept printing
-# the last values as current. Anyone writing a clean recipe from this template
-# will assume build output is disposable, because in most projects it is.
+# Being reachable is not the same as being on PATH. A link invoked by absolute
+# path from a hook, a service unit or a configuration file is not on PATH at
+# all, and a check that swept PATH would miss it. So the question to ask of a
+# path before deleting it is "does anything execute this".
 #
 # So a language layer overriding this removes run directories, coverage output
 # and intermediate build trees, and leaves the installed artefact alone. `just
@@ -170,8 +150,6 @@ clean:
 # `leak-scan` is clean with no `@`, in isolation, and with a body that itself
 # invokes `bolt secrets`. The jig keeps its name: `bolt.secrets.yaml` is
 # toolbox's and is untouched. Only the recipe is renamed.
-#
-# Every project answering to the same two words is a settled decision.
 
 # the secrets jig alone
 leak-scan:

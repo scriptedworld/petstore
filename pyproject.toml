@@ -5,7 +5,7 @@ description = "Small, reusable tools for personal Python development."
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
-authors = [{ name = "Ancient" }]
+authors = [{ name = "J W" }]
 dependencies = []
 
 [build-system]
