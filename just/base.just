@@ -18,8 +18,8 @@
 #
 #    bolt's own --result-to-exitcode does make the status carry the verdict,
 #    and is still not used: it collapses a refusal, where no result was
-#    written at all, into the same exit 1 as a failed run. Those are different
-#    answers and a recipe that cannot tell them apart reports the wrong one.
+#    written at all, into the same exit 1 as a failed run, so a recipe could
+#    no longer tell the two apart.
 #
 # 2. It takes bolt's default output directory and names no --output-dir at
 #    all. A fixed directory is what is forbidden, because bolt refuses one that
@@ -143,9 +143,7 @@ clean:
 #
 # The verdict also depends on prose. This file stays clean with the `@`
 # removed, while the same three lines cut out of it flag, because the word
-# appears eight times in the comments above. The check clears a file whose name
-# is genuinely hazardous, and would equally condemn one that had done nothing
-# but lose a comment.
+# appears eight times in the comments above.
 #
 # `leak-scan` is clean with no `@`, in isolation, and with a body that itself
 # invokes `bolt secrets`. The jig keeps its name: `bolt.secrets.yaml` is
