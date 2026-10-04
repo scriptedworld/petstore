@@ -98,7 +98,9 @@ Frequently used recipes:
 | Recipe | Purpose |
 | --- | --- |
 | `checks` | Run the whole gate: the Python jig, then traceability, suppressions, wording and secrets. |
-| `test` | Run the suite, for a fast inner loop. |
+| `test` | Run the suite, or the tests named: `just test tests/test_proc.py`. |
+| `lint`, `types`, `format-check` | ruff, mypy or the formatter alone, over the paths named or the tree. |
+| `security` | bandit over the source, and over the tests except `assert`. |
 | `coverage` | Run the suite under coverage and report it per file. |
 | `fix` | Format files and apply safe Ruff fixes. |
 | `leak-scan` | Run toolbox's secrets jig through bolt. |

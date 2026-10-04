@@ -24,9 +24,12 @@ checks:
 wording-commit-msg file:
     python3 {{ toolbox }}/bin/voice-tells.py --commit-msg-filename {{ file }}
 
-# the suite
-test:
-    uv run pytest
+# The single-tool recipes take the paths to check, defaulting to the tree, so
+# one file is `just lint src/petstore/proc.py`. `checks` is still the verdict.
+
+# the suite, or the named tests
+test *args:
+    uv run pytest {{ args }}
 
 # the suite under coverage, reported per file; the jig holds the minimum
 coverage:
@@ -34,16 +37,29 @@ coverage:
     uv run coverage report
 
 # formatting verified, nothing written
-format-check:
-    uv run ruff format --check .
+format-check *paths=".":
+    uv run ruff format --check {{ paths }}
 
 # formatting written
-format:
-    uv run ruff format .
+format *paths=".":
+    uv run ruff format {{ paths }}
+
+# ruff lint, nothing written
+lint *paths=".":
+    uv run ruff check {{ paths }}
 
 # ruff lint with its safe fixes written
-lint-fix:
-    uv run ruff check --fix .
+lint-fix *paths=".":
+    uv run ruff check --fix {{ paths }}
+
+# mypy, strict as pyproject.toml sets it
+types *paths=".":
+    uv run mypy {{ paths }}
+
+# bandit over the source, and over the tests except assert
+security:
+    uv run bandit -r -q src
+    uv run bandit -r -q --skip B101 tests
 
 # formatting and safe lint fixes written
 fix:
