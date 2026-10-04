@@ -28,6 +28,24 @@ Open the repository using a client that implements the Development Container
 specification. Container creation performs a frozen synchronization from
 `uv.lock` and installs the Git hooks when Git metadata is available.
 
+The image carries everything `just checks` needs, each pinned in
+`.devcontainer/Dockerfile`:
+
+- bolt, built from a pinned commit together with the wrench checkout it
+  builds against (`BOLT_REV`, `WRENCH_REV`);
+- a toolbox checkout at `/workspaces/toolbox`, beside the workspace
+  (`TOOLBOX_REV`);
+- gitleaks, from its release image's tag;
+- ruff, pylint, complexipy, vulture, interrogate, bandit, detect-secrets and
+  just, through `uv tool install` at the versions `uv.lock` holds, first on
+  `PATH`;
+- pyyaml and wrench for the system `python3`, which toolbox's scripts run
+  under.
+
+To move a pin, change the `ARG` or version in the Dockerfile and rebuild the
+container. Keep the tool versions equal to `uv.lock`'s, and `WRENCH_REV` equal
+to the `rev` in `pyproject.toml`'s `[tool.uv.sources]`.
+
 After creation, verify the environment:
 
 ```console
@@ -64,7 +82,7 @@ the same command.
 checkout beside this tree, [bolt](https://github.com/scriptedworld/bolt), and
 the tools the jigs call on `PATH` (ruff, mypy, pylint, complexipy, vulture,
 interrogate, bandit, gitleaks, detect-secrets). bolt's `docs/runbook.md` says
-how to build it and install them.
+how to build it and install them, and the Dev Container has them all.
 
 The recipes are layered through imports, and the first layer to define a recipe
 wins:

@@ -32,7 +32,14 @@ dev = [
     "ruff>=0.12.10",
     "rust-just==1.58.0",
     "vulture>=2.14",
+    # toolbox's adapters import wrench and yaml from the python3 on PATH, which
+    # under `uv run just checks` is this environment's. wrench needs 3.12.
+    "pyyaml>=6",
+    "wrench; python_version >= '3.12'",
 ]
+
+[tool.uv.sources]
+wrench = { git = "https://github.com/scriptedworld/wrench", subdirectory = "python", rev = "be2e4de16ad4" }
 
 [tool.commitizen]
 name = "cz_conventional_commits"

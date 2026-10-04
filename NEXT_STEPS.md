@@ -1,5 +1,4 @@
 # Next steps
 
-petstore is being made ready to publish. The work is tracked outside this
-repository. It waits on the Dev Container installing every tool `just checks`
-needs.
+petstore is ready to publish. The work is tracked outside this repository, and
+what remains is switching its visibility to public.

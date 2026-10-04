@@ -66,6 +66,10 @@ fix:
     @just format
     @just lint-fix
 
+# resolve dependencies again into uv.lock, after pyproject.toml changes
+lock:
+    uv lock
+
 # the wheel and source distribution
 dist:
     uv build
