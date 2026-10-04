@@ -2,7 +2,8 @@
 
 Small Python tools for development work: `Validated` attributes checked on
 assignment, `Stub` for testing code through its IO seams, a cross-process path
-lock, and a zip with four termination policies. Python 3.10 or later, typed.
+lock, a zip with four termination policies, and one place to start other
+programs from. Python 3.10 or later, typed.
 
 ## Install
 
@@ -164,6 +165,25 @@ The lock is an advisory `flock` on a private lock file named for the resolved
 path, so the path itself need not exist and is never touched. Lock files live
 under `$XDG_RUNTIME_DIR`; use `make_locked(lock_dir=...)` where no runtime
 directory exists. POSIX only.
+
+## Starting other programs
+
+The module guide is [`docs/modules/proc.md`](docs/modules/proc.md).
+
+`petstore.proc` starts programs from a list of arguments, never through a
+shell, so each element reaches the program as one argument:
+
+```python
+from petstore.proc import capture
+
+finished = capture(["git", "rev-parse", "HEAD"], check=True)
+finished.stdout  # the commit, with a newline
+```
+
+`through` hands the child given streams, `wait` lets it use this process's,
+and `become` replaces this process with it. bandit's findings on starting a
+program are registered once, in petstore, so code starting its programs here
+needs no pragma of its own.
 
 ## Developing petstore
 
