@@ -16,6 +16,10 @@ written, gated and tested once. The public surface is `petstore/__init__.py`:
     locked, make_locked, Lock*Error      a cross-process lock named for a path
     zip_iter, ZipMode                    zip with four termination policies
     petstore.proc                        the one place to start another program
+    petstore.metrics                     counters, measures and a recorder by name
+
+`petstore.proc` and `petstore.metrics` are imported as modules rather than from
+`petstore`; metrics' `Counter` would otherwise shadow `collections.Counter`.
 
 petstore has no runtime dependencies.
 

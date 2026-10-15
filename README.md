@@ -1,9 +1,10 @@
 # PetStore
 
 Small Python tools for development work: `Validated` attributes checked on
-assignment and `validate` for plain values such as arguments, `Stub` for testing code through its IO seams, a cross-process path
-lock, a zip with four termination policies, and one place to start other
-programs from. Python 3.12 or later, typed.
+assignment and `validate` for plain values such as arguments, `Stub` for
+testing code through its IO seams, a cross-process path lock, a zip with four
+termination policies, one place to start other programs from, and counters
+and measures with exact summaries and quantiles. Python 3.12 or later, typed.
 
 ## Install
 
@@ -203,6 +204,35 @@ finished.stdout  # the commit, with a newline
 and `become` replaces this process with it. bandit's findings on starting a
 program are registered once, in petstore, so code starting its programs here
 needs no pragma of its own.
+
+## Metrics
+
+The module guide is [`docs/modules/metrics.md`](docs/modules/metrics.md).
+
+`petstore.metrics` counts how often things happen and records values. Import
+it as a module; its `Counter` is not exported from `petstore`, where it would
+shadow `collections.Counter`:
+
+```python
+from petstore.metrics import All, StatsRecorder
+
+recorder = StatsRecorder()
+hits = recorder.counter("hits")
+load = recorder.measure("page_load", keep=All(), under=(5.0,))
+
+hits()
+load(2.4)
+
+d = recorder.snapshot().distribution("page_load")
+d.mean, d.stdev, d.quantile(0.95), d.under(5.0)
+```
+
+Every measure keeps an exact running summary in constant memory. Quantiles
+need `keep=All()`, a recent window needs `keep=Last(n)` and is read through
+`.sample`, and a share under a threshold declared in `under=` costs nothing
+kept. A question a measure cannot answer raises `StatsError` saying what it
+would need. Not thread-safe: give each thread its own recorder, or guard calls
+with a lock.
 
 ## Developing petstore
 
