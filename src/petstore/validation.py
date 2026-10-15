@@ -26,6 +26,16 @@ One instance belongs to one attribute of one class. Python calls
 ``__set_name__`` for each class body the instance appears in, so sharing a
 single instance between two classes leaves it labelled for whichever class was
 defined last.
+
+A plain value, such as a function argument, takes the same rules and the same
+error format through ``validate``, which returns the value so the check sits on
+the assignment:
+
+    def reserve(count: int) -> None:
+        count = validate(count, positive, label="count")
+
+``Validated`` runs its rules through ``validate``, so an attribute and an
+argument fail with the same message.
 """
 
 from __future__ import annotations
@@ -33,7 +43,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Generic, TypeVar, cast, overload
 
-__all__ = ["Rule", "Validated", "ValidationError"]
+__all__ = ["Rule", "Validated", "ValidationError", "validate"]
 
 T = TypeVar("T")
 
@@ -43,6 +53,33 @@ Rule = Callable[[T], None]
 
 class ValidationError(ValueError):
     """Raised when a value fails a rule attached to a validated attribute."""
+
+
+def validate(value: T, *rules: Rule[T], label: str) -> T:
+    """Apply every rule to *value* and return it unchanged.
+
+    Args:
+        value: The value to check.
+        rules: Applied in order; the first failure is reported.
+        label: Names the value in error messages. Keyword-only and required,
+            because an unlabelled failure is what this exists to prevent.
+
+    Returns:
+        *value*, so a caller can write ``x = validate(x, ...)``.
+
+    Raises:
+        ValidationError: If any rule rejects the value. The rule's own message
+            is prefixed with *label*. Any other exception a rule raises
+            propagates unchanged.
+
+    """
+    try:
+        for rule in rules:
+            rule(value)
+    except ValidationError as problem:
+        message = f"{label} {problem}"
+        raise ValidationError(message) from None
+    return value
 
 
 class Validated(Generic[T]):
@@ -95,12 +132,7 @@ class Validated(Generic[T]):
                 message is prefixed with this attribute's label.
 
         """
-        try:
-            for rule in self._rules:
-                rule(value)
-        except ValidationError as problem:
-            message = f"{self._label} {problem}"
-            raise ValidationError(message) from None
+        validate(value, *self._rules, label=self._label)
         # object.__setattr__ rather than setattr: a frozen dataclass rejects the
         # ordinary path, and the plain machinery still honours a data descriptor.
         object.__setattr__(obj, self._private_name, value)

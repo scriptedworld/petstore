@@ -1,7 +1,7 @@
 # PetStore
 
 Small Python tools for development work: `Validated` attributes checked on
-assignment, `Stub` for testing code through its IO seams, a cross-process path
+assignment and `validate` for plain values such as arguments, `Stub` for testing code through its IO seams, a cross-process path
 lock, a zip with four termination policies, and one place to start other
 programs from. Python 3.10 or later, typed.
 
@@ -92,6 +92,24 @@ failure. The rule supplies only what is wrong; the descriptor supplies which
 attribute it was, defaulting to the attribute name and overridable with
 `label=`. Validation applies to later assignment exactly as to construction,
 and works on frozen dataclasses, which reject ordinary attribute assignment.
+
+`petstore.validate` applies the same rules to a plain value, such as a function
+argument, and returns it unchanged, so the check sits on the assignment. The
+label is required and keyword-only, and a failure reads exactly as the
+descriptor's does, because the descriptor calls it:
+
+```python
+from petstore import validate
+
+
+def reserve(count: int) -> int:
+    count = validate(count, positive, label="count")
+    return count
+
+
+reserve(4)  # 4
+reserve(0)  # ValidationError: count must be positive
+```
 
 ## Testing IO through a seam
 

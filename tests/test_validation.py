@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+import inspect
 from dataclasses import dataclass
 
 import pytest
 
-from petstore.validation import Validated, ValidationError
+from petstore.validation import Validated, ValidationError, validate
 
 
 def reject_blank(value: str) -> None:
@@ -123,3 +124,65 @@ def test_class_access_returns_the_descriptor() -> None:
     descriptor = Label.text
 
     assert isinstance(descriptor, Validated)
+
+
+def reject_odd_length(value: str) -> None:
+    """Fail with something other than ValidationError, as a broken rule might."""
+    if len(value) % 2:
+        message = "odd length"
+        raise TypeError(message)
+
+
+# COVERS FR-2.6 | positive
+def test_validate_returns_an_accepted_value_unchanged() -> None:
+    """Verify an accepted value comes back as the same object."""
+    value = "hello"
+
+    assert validate(value, reject_blank, reject_short, label="greeting") is value
+
+
+# COVERS FR-2.6 | edge
+def test_validate_with_no_rules_returns_the_value() -> None:
+    """Verify no rules means no check, as with a descriptor declaring none."""
+    assert validate("", label="anything") == ""
+
+
+# COVERS FR-2.6 | negative
+def test_validate_reports_only_the_first_failing_rule() -> None:
+    """Verify rules run in order and a later rule does not mask the first failure."""
+    with pytest.raises(ValidationError, match=r"^greeting must not be blank$"):
+        validate("  ", reject_blank, reject_short, label="greeting")
+    with pytest.raises(ValidationError, match=r"^greeting must be at least three characters$"):
+        validate("ab", reject_blank, reject_short, label="greeting")
+
+
+# COVERS FR-2.6, FR-2.3 | property
+def test_validate_fails_exactly_as_the_descriptor_does() -> None:
+    """Verify the message, type and chaining match the descriptor's failure."""
+    with pytest.raises(ValidationError) as from_descriptor:
+        Note("")
+    with pytest.raises(ValidationError) as from_function:
+        validate("", reject_blank, label="note body")
+
+    assert type(from_function.value) is type(from_descriptor.value) is ValidationError
+    assert str(from_function.value) == str(from_descriptor.value) == "note body must not be blank"
+    assert from_function.value.__cause__ is from_descriptor.value.__cause__ is None
+    assert from_function.value.__suppress_context__ is from_descriptor.value.__suppress_context__ is True
+
+
+# COVERS FR-2.6 | negative
+def test_validate_lets_other_exceptions_through_unchanged() -> None:
+    """Verify an exception other than ValidationError is neither wrapped nor relabelled."""
+    with pytest.raises(TypeError, match=r"^odd length$") as failure:
+        validate("abc", reject_blank, reject_odd_length, label="code")
+
+    assert not isinstance(failure.value, ValidationError)
+
+
+# COVERS FR-2.6 | edge
+def test_validate_requires_a_keyword_label() -> None:
+    """Verify the label can be passed only by keyword, and has no default."""
+    label = inspect.signature(validate).parameters["label"]
+
+    assert label.kind is inspect.Parameter.KEYWORD_ONLY
+    assert label.default is inspect.Parameter.empty

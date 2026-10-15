@@ -3,7 +3,7 @@
 from .iteration import ZipMode, zip_iter
 from .locking import LockError, LockTimeoutError, locked, make_locked
 from .stubs import CallEvent, Stub, StubExhaustedError, generate
-from .validation import Rule, Validated, ValidationError
+from .validation import Rule, Validated, ValidationError, validate
 
 __all__ = [
     "CallEvent",
@@ -18,5 +18,6 @@ __all__ = [
     "generate",
     "locked",
     "make_locked",
+    "validate",
     "zip_iter",
 ]

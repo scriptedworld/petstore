@@ -11,6 +11,7 @@ One home for the Python helpers more than one tool here needs, so each is
 written, gated and tested once. The public surface is `petstore/__init__.py`:
 
     Validated, Rule, ValidationError     check a value when it is assigned
+    validate                             the same rules over a plain value
     Stub, generate, CallEvent            a scripted callable passed through a seam
     locked, make_locked, Lock*Error      a cross-process lock named for a path
     zip_iter, ZipMode                    zip with four termination policies
