@@ -4,7 +4,7 @@ Module: `petstore.complexity`, imported from the module itself and not from
 `petstore`:
 
 ```python
-from petstore.complexity import Complexity, Meter, Probe, memory_complexity, time_complexity
+from petstore.complexity import Complexity, Growth, Meter, Probe, memory_complexity, time_complexity
 ```
 
 Public API: `time_complexity`, `memory_complexity`, `Complexity`, `Growth`,
