@@ -3,7 +3,7 @@ name = "petstore"
 version = "0.1.0"
 description = "Small, reusable tools for personal Python development."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 license = "Apache-2.0"
 authors = [{ name = "J W" }]
 dependencies = []
@@ -68,7 +68,7 @@ skip_covered = false
 
 [tool.ruff]
 line-length = 150
-target-version = "py310"
+target-version = "py312"
 
 [tool.ruff.lint]
 select = ["ALL"]
@@ -87,12 +87,12 @@ ignore = [
 max-complexity = 15
 
 [tool.mypy]
-python_version = "3.10"
+python_version = "3.12"
 strict = true
 files = ["src", "tests"]
 
 [tool.pylint.main]
-py-version = "3.10"
+py-version = "3.12"
 recursive = true
 ignore-paths = ['^\.venv/']
 

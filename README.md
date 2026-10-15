@@ -3,7 +3,7 @@
 Small Python tools for development work: `Validated` attributes checked on
 assignment and `validate` for plain values such as arguments, `Stub` for testing code through its IO seams, a cross-process path
 lock, a zip with four termination policies, and one place to start other
-programs from. Python 3.10 or later, typed.
+programs from. Python 3.12 or later, typed.
 
 ## Install
 

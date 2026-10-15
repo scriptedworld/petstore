@@ -52,7 +52,7 @@ from dataclasses import dataclass
 from datetime import timedelta
 from inspect import Parameter, Signature, signature
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Any, Generic, NamedTuple, NoReturn, ParamSpec, TypeVar, cast, overload
+from typing import TYPE_CHECKING, Any, NamedTuple, NoReturn, cast, overload
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator
@@ -61,10 +61,6 @@ __all__ = ["CallEvent", "Stub", "StubExhaustedError", "generate", "make_signatur
 
 ExceptionSpec = BaseException | type[BaseException]
 
-P = ParamSpec("P")
-R = TypeVar("R")
-ReturnT = TypeVar("ReturnT")
-YieldT = TypeVar("YieldT")
 _UNSET = object()
 
 # One generator step: whether to delegate to an iterable, and what to produce.
@@ -155,7 +151,7 @@ def make_signature(
     return Signature(declared)
 
 
-class Stub(Generic[P, R]):
+class Stub[**P, R]:
     """A callable whose successive outcomes are scripted one link at a time.
 
     Built from a callable, the stub takes that callable's parameter and return
@@ -339,7 +335,7 @@ class Stub(Generic[P, R]):
 
 
 @overload
-def generate(
+def generate[ReturnT](
     *,
     returns: ReturnT,
     parameters: Iterable[str] | None = None,
@@ -357,7 +353,7 @@ def generate(
 
 
 @overload
-def generate(
+def generate[YieldT](
     *,
     yields: Iterable[YieldT],
     parameters: Iterable[str] | None = None,

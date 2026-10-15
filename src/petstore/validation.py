@@ -42,7 +42,7 @@ two problems reports the first; once it is fixed, the next shows.
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Generic, TypeVar, cast, overload
+from typing import TypeVar, cast, overload
 
 __all__ = ["Rule", "Validated", "ValidationError", "validate"]
 
@@ -56,7 +56,7 @@ class ValidationError(ValueError):
     """Raised when a value fails a rule, whether checked by ``validate`` or a ``Validated`` attribute."""
 
 
-def validate(value: T, *rules: Rule[T], label: str) -> T:
+def validate[T](value: T, *rules: Rule[T], label: str) -> T:
     """Apply every rule to *value* and return it unchanged.
 
     Args:
@@ -85,7 +85,7 @@ def validate(value: T, *rules: Rule[T], label: str) -> T:
     return value
 
 
-class Validated(Generic[T]):
+class Validated[T]:
     """Run rules against a value, then store it on the owning instance.
 
     A descriptor lives on the class and is shared by every instance, so nothing

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 from itertools import zip_longest
 from typing import TYPE_CHECKING, Any
 
@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
 
 
-class ZipMode(str, Enum):
+class ZipMode(StrEnum):
     """Termination and mismatch policies supported by :func:`zip_iter`."""
 
     SHORTEST = "shortest"
