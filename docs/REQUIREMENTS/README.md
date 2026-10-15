@@ -7,7 +7,7 @@ above the test, and toolbox's `test-traceability.py` checks both directions.
 
     iteration   FR-1.x     validation  FR-2.x     stubs     FR-3.x
     generate    FR-4.x     locking     FR-5.x     proc      FR-6.x
-    metrics     FR-7.x     complexity  FR-8.x
+    metrics     FR-7.x     complexity  FR-8.x     release   FR-9.x
 
 ## Earlier IDs
 

@@ -278,3 +278,36 @@ this tree, [bolt](https://github.com/scriptedworld/bolt), and the checkers on
 
 [`docs/tooling-and-runbook.md`](docs/tooling-and-runbook.md) covers the Dev
 Container, the recipes, the commit hooks and troubleshooting.
+
+## Releasing
+
+Every change ends with a release, and consumers pin the release tag, never a
+commit hash:
+
+```toml
+[tool.uv.sources]
+petstore = { git = "https://github.com/scriptedworld/petstore", tag = "v0.2.0" }
+```
+
+A hash in a consumer's `pyproject.toml` reads as a possible secret to
+detect-secrets, and a tag says what the pin means.
+
+```console
+just release                      # the increment the commits call for
+just release --increment PATCH    # or name it
+```
+
+The version is written once, in `pyproject.toml`; `petstore.__version__` reads
+it back from the installed package. `release` refuses unless it is on `main`
+with nothing uncommitted, then runs the full gate and commitizen's `cz bump`.
+That works out the increment from the conventional commits since the last tag
+(`fix` a patch; `feat`, and before 1.0 a breaking change, a minor), sets the
+version, relocks `uv.lock`, adds the release to `CHANGELOG.md`, commits, and
+creates the annotated tag. `release` then pushes the commit and the tag with
+`git push --follow-tags` and prints `git ls-remote --tags` for the new tag as
+the proof it landed.
+
+Tags are `vMAJOR.MINOR.PATCH`. Before 1.0, a minor release may break things. A
+pushed tag is never moved or deleted; a mistake is fixed by the next patch
+release. `tests/test_release.py` fails if `petstore.__version__`,
+`pyproject.toml` and the tags drift apart.

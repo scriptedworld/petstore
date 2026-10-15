@@ -41,12 +41,19 @@ dev = [
 [tool.uv.sources]
 wrench = { git = "https://github.com/scriptedworld/wrench", subdirectory = "python", rev = "be2e4de16ad4" }
 
+# The version lives in [project] above and nowhere else: commitizen reads and
+# bumps it there (pep621), and petstore.__version__ reads it back from the
+# installed metadata. `just release` runs the bump.
 [tool.commitizen]
 name = "cz_conventional_commits"
 version_provider = "pep621"
 tag_format = "v$version"
+annotated_tag = true
 major_version_zero = true
 update_changelog_on_bump = true
+# uv.lock records the project's own version, so it is relocked inside the bump
+# and committed with it; the gate's `uv run --locked` would refuse it otherwise.
+pre_bump_hooks = ["uv lock"]
 allowed_prefixes = []
 
 [tool.pytest.ini_options]

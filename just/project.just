@@ -87,6 +87,31 @@ vendor:
     curl -fsSL -o bolt.secrets.yaml.tmp https://raw.githubusercontent.com/scriptedworld/toolbox/main/bolt.secrets.yaml
     mv bolt.secrets.yaml.tmp bolt.secrets.yaml
 
+# A release is commitizen's bump of the one version in pyproject.toml, an
+# annotated tag vX.Y.Z on that commit, and both pushed. Consumers pin the tag,
+# never a commit hash: a quoted hex hash in their pyproject.toml reads as a
+# secret to detect-secrets. Before 1.0, a minor release may break things. A
+# pushed tag is never moved or deleted; a mistake is fixed by the next patch
+# release.
+#
+# cz bump works out the increment from the conventional commits since the last
+# tag, writes CHANGELOG.md, relocks (its pre_bump_hooks), and commits with
+# `git commit -a`. That is why the tree must be clean first: -a then picks up
+# only the bump's own files, pyproject.toml, uv.lock and CHANGELOG.md.
+
+# release, or release --increment PATCH: gate, cz bump and tag, push both, show the tag on origin
+[positional-arguments]
+release *bump_args:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ "$(git branch --show-current)" != main ]; then echo "refused: release from main" >&2; exit 1; fi
+    if ! git diff --quiet || ! git diff --cached --quiet; then echo "refused: commit or stash your changes first" >&2; exit 1; fi
+    just checks
+    uv run cz bump --yes "$@"
+    version=$(uv run cz version --project)
+    git push --follow-tags origin main
+    git ls-remote --tags origin "v$version"
+
 # `hooks` refuses on any machine with a global core.hooksPath, including the
 # development host: git reads no .git/hooks there, and pre-commit will not
 # install into a directory git ignores. It works in the devcontainer and
