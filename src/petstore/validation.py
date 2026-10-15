@@ -36,6 +36,10 @@ the assignment:
 
 ``Validated`` runs its rules through ``validate``, so an attribute and an
 argument fail with the same message.
+
+Either way, rules run in the order given and stop at the first failure: that
+rule's message is the one reported, and the rules after it are not run. A
+value with two problems reports the first; once it is fixed, the next shows.
 """
 
 from __future__ import annotations
@@ -60,7 +64,9 @@ def validate(value: T, *rules: Rule[T], label: str) -> T:
 
     Args:
         value: The value to check.
-        rules: Applied in order; the first failure is reported.
+        rules: Applied in order. The first to raise ValidationError is the
+            one reported, and the rules after it are not run, so one call
+            reports at most one problem.
         label: Names the value in error messages. Keyword-only and required,
             because an unlabelled failure is what this exists to prevent.
 
@@ -95,7 +101,8 @@ class Validated(Generic[T]):
         """Accept the rules to apply, and optionally the name used in errors.
 
         Args:
-            rules: Applied in order; the first failure is reported.
+            rules: Applied in order. The first to raise ValidationError is
+                the one reported, and the rules after it are not run.
             label: Names the attribute in error messages. Defaults to the
                 attribute name the descriptor is assigned to.
 

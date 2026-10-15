@@ -87,16 +87,18 @@ Batch(4).size  # 4
 Batch(0)  # ValidationError: size must be positive
 ```
 
-Rules run in declaration order and the first to reject a value determines the
-failure. The rule supplies only what is wrong; the descriptor supplies which
+Rules run in declaration order and stop at the first failure: the first rule to
+reject a value is the one reported, and the rules after it are not run, so a
+value with two problems reports the first. The rule supplies only what is wrong; the descriptor supplies which
 attribute it was, defaulting to the attribute name and overridable with
 `label=`. Validation applies to later assignment exactly as to construction,
 and works on frozen dataclasses, which reject ordinary attribute assignment.
 
 `petstore.validate` applies the same rules to a plain value, such as a function
 argument, and returns it unchanged, so the check sits on the assignment. The
-label is required and keyword-only, and a failure reads exactly as the
-descriptor's does, because the descriptor calls it:
+label is required and keyword-only, and it behaves exactly as the descriptor
+does, the first failing rule being the one reported, because the descriptor
+calls it:
 
 ```python
 from petstore import validate

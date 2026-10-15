@@ -133,6 +133,37 @@ def reject_odd_length(value: str) -> None:
         raise TypeError(message)
 
 
+class Recorder:
+    """A rule that accepts everything and remembers each value it was asked about."""
+
+    def __init__(self) -> None:
+        """Start with nothing seen."""
+        self.seen: list[str] = []
+
+    def __call__(self, value: str) -> None:
+        """Record value and accept it."""
+        self.seen.append(value)
+
+
+# COVERS FR-2.2, FR-2.6 | negative
+def test_rules_after_the_first_failure_are_not_run() -> None:
+    """Verify a rule after the failing one is never called, by the function or the descriptor."""
+    after = Recorder()
+    with pytest.raises(ValidationError, match=r"^greeting must not be blank$"):
+        validate("  ", reject_blank, after, label="greeting")
+
+    owner_rules: Validated[str] = Validated(reject_blank, after)
+
+    @dataclass
+    class Owner:
+        text: Validated[str] = owner_rules
+
+    with pytest.raises(ValidationError, match=r"^text must not be blank$"):
+        Owner("  ")
+
+    assert after.seen == []
+
+
 # COVERS FR-2.6 | positive
 def test_validate_returns_an_accepted_value_unchanged() -> None:
     """Verify an accepted value comes back as the same object."""

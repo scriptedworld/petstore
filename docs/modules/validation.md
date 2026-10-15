@@ -45,9 +45,8 @@ class Batch:
 assert Batch(4).size == 4
 ```
 
-Rules run in declaration order, and the first to reject a value determines the
-failure. The rule supplies only what is wrong; the descriptor supplies which
-attribute it was:
+The rule supplies only what is wrong; the descriptor supplies which attribute
+it was:
 
 ```python
 try:
@@ -55,6 +54,29 @@ try:
 except ValidationError as error:
     assert str(error) == "size must be even"
 ```
+
+### The first failing rule is the one reported
+
+Rules run in the order they are given, and validation stops at the first rule
+that rejects the value. That rule's message is the failure; the rules after it
+are not run at all. So a value with several problems reports one of them, the
+first, and the next appears only once that one is fixed:
+
+```python
+try:
+    Batch(-3)  # neither positive nor even
+except ValidationError as error:
+    assert str(error) == "size must be positive"  # even never ran
+
+try:
+    Batch(3)  # positive now, still odd
+except ValidationError as error:
+    assert str(error) == "size must be even"
+```
+
+Two things follow. Order the rules so the one a reader most needs to hear comes
+first, usually the broadest. And a later rule may rely on every earlier rule
+having passed: `even` above never sees a value that `positive` rejected.
 
 The label defaults to the attribute name and can be replaced at declaration when
 the attribute name is not what a reader should see:
@@ -94,7 +116,9 @@ except ValidationError as error:
 
 It behaves exactly as the descriptor does, because the descriptor calls it:
 
-- Rules run in order, and the first to reject the value determines the failure.
+- Rules run in order, and the first to reject the value is the one reported.
+  The rules after it are not run. `validate(-3, positive, even, label="count")`
+  fails with `count must be positive`, and `even` is never called.
 - The failure is a new `ValidationError` reading `<label> <rule message>`,
   raised `from None`, so the rule's own exception is not chained onto it.
 - An exception other than `ValidationError` raised by a rule propagates
