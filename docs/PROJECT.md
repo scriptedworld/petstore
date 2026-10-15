@@ -17,9 +17,11 @@ written, gated and tested once. The public surface is `petstore/__init__.py`:
     zip_iter, ZipMode                    zip with four termination policies
     petstore.proc                        the one place to start another program
     petstore.metrics                     counters, measures and a recorder by name
+    petstore.complexity                  tests holding code to a time or memory class
 
-`petstore.proc` and `petstore.metrics` are imported as modules rather than from
-`petstore`; metrics' `Counter` would otherwise shadow `collections.Counter`.
+`petstore.proc`, `petstore.metrics` and `petstore.complexity` are imported as
+modules rather than from `petstore`; metrics' `Counter` would otherwise shadow
+`collections.Counter`.
 
 petstore has no runtime dependencies.
 

@@ -3,8 +3,9 @@
 Small Python tools for development work: `Validated` attributes checked on
 assignment and `validate` for plain values such as arguments, `Stub` for
 testing code through its IO seams, a cross-process path lock, a zip with four
-termination policies, one place to start other programs from, and counters
-and measures with exact summaries and quantiles. Python 3.12 or later, typed.
+termination policies, one place to start other programs from, counters and
+measures with exact summaries and quantiles, and test decorators that hold
+code to a time or memory complexity. Python 3.12 or later, typed.
 
 ## Install
 
@@ -233,6 +234,33 @@ need `keep=All()`, a recent window needs `keep=Last(n)` and is read through
 kept. A question a measure cannot answer raises `StatsError` saying what it
 would need. Not thread-safe: give each thread its own recorder, or guard calls
 with a lock.
+
+## Complexity tests
+
+The module guide is [`docs/modules/complexity.md`](docs/modules/complexity.md).
+
+`petstore.complexity` holds code to a time or memory complexity in an ordinary
+test, by running the same work at several sizes and comparing a deterministic
+measure, never a timing:
+
+```python
+from petstore.complexity import Complexity, Probe, time_complexity
+
+
+@time_complexity(Complexity.CONSTANT, sizes=(10, 100, 1_000))
+def test_get_is_constant(n: int, probe: Probe) -> None:
+    cache = filled(n)  # setup: not counted
+    with probe.counting():
+        cache.get(probe.key(0))  # the work: counted
+```
+
+A `Probe` counts every bytecode instruction run inside `counting()`, and every
+hash and comparison on a key from `probe.key()`, which catches work inside C
+builtins. `memory_complexity` does the same with `tracemalloc`, for retained or
+peak bytes. `Complexity` runs from `CONSTANT` to `FACTORIAL`, and `Growth`
+makes any other class. A test that never enters its counting block fails
+rather than passing on nothing. Not thread-safe: `sys.monitoring` is
+process-wide, so run these with no other threads busy.
 
 ## Developing petstore
 
