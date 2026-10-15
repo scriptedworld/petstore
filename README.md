@@ -94,11 +94,10 @@ attribute it was, defaulting to the attribute name and overridable with
 `label=`. Validation applies to later assignment exactly as to construction,
 and works on frozen dataclasses, which reject ordinary attribute assignment.
 
-`petstore.validate` applies the same rules to a plain value, such as a function
+`petstore.validate` is what runs the rules, and `Validated` calls it on every
+assignment. Called directly, it checks a plain value, such as a function
 argument, and returns it unchanged, so the check sits on the assignment. The
-label is required and keyword-only, and it behaves exactly as the descriptor
-does, the first failing rule being the one reported, because the descriptor
-calls it:
+label is required and keyword-only:
 
 ```python
 from petstore import validate

@@ -13,9 +13,10 @@ are ordinary functions, and `Validated` holds every mechanical concern: storage,
 the write that works on frozen instances, the attribute name, and decorating a
 failure with the attribute's label.
 
-`validate` applies the same rules to a plain value, such as a function argument,
-with the same failure format. `Validated` runs its rules through it, so the two
-cannot drift apart.
+`validate` is what runs the rules: it applies them to a value in order and
+labels the first failure. `Validated` calls it on every assignment. Called
+directly, it checks a plain value, such as a function argument, that has no
+attribute to hang a descriptor on.
 
 ## Usage
 
@@ -114,7 +115,8 @@ except ValidationError as error:
     assert str(error) == "count must be even"
 ```
 
-It behaves exactly as the descriptor does, because the descriptor calls it:
+What `validate` does with the rules, and so what every `Validated` attribute
+does too:
 
 - Rules run in order, and the first to reject the value is the one reported.
   The rules after it are not run. `validate(-3, positive, even, label="count")`

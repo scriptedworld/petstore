@@ -27,19 +27,16 @@ One instance belongs to one attribute of one class. Python calls
 single instance between two classes leaves it labelled for whichever class was
 defined last.
 
-A plain value, such as a function argument, takes the same rules and the same
-error format through ``validate``, which returns the value so the check sits on
-the assignment:
+``validate`` is what runs the rules, and ``Validated`` calls it on every
+assignment. Called directly, it checks a plain value, such as a function
+argument, and returns the value so the check sits on the assignment:
 
     def reserve(count: int) -> None:
         count = validate(count, positive, label="count")
 
-``Validated`` runs its rules through ``validate``, so an attribute and an
-argument fail with the same message.
-
-Either way, rules run in the order given and stop at the first failure: that
-rule's message is the one reported, and the rules after it are not run. A
-value with two problems reports the first; once it is fixed, the next shows.
+Rules run in the order given and stop at the first failure: that rule's
+message is the one reported, and the rules after it are not run. A value with
+two problems reports the first; once it is fixed, the next shows.
 """
 
 from __future__ import annotations
@@ -56,7 +53,7 @@ Rule = Callable[[T], None]
 
 
 class ValidationError(ValueError):
-    """Raised when a value fails a rule attached to a validated attribute."""
+    """Raised when a value fails a rule, whether checked by ``validate`` or a ``Validated`` attribute."""
 
 
 def validate(value: T, *rules: Rule[T], label: str) -> T:
