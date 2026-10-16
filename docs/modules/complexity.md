@@ -60,10 +60,10 @@ a copy made and thrown away inside the block still shows.
 from petstore.complexity import Clock, Complexity, Probe, time_complexity
 
 time_complexity(
-    Complexity.CONSTANT,                  # any Complexity, or a Growth
+    Complexity.CONSTANT,  # any Complexity, or a Growth
     sizes=(100, 1_000, 10_000, 100_000),  # at least two, ascending, spanning the class's minimum
-    tolerance=2.0,                        # how far the count may grow past the bound
-    granularity="instructions",           # "lines" is faster and blind to one-line loops
+    tolerance=2.0,  # how far the count may grow past the bound
+    granularity="instructions",  # "lines" is faster and blind to one-line loops
     clock=Clock(repeats=50, tolerance=4.0),  # None, the default, runs no timed pass
 )
 ```
