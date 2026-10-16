@@ -7,8 +7,11 @@
 # The gate is toolbox's jigs, run through bolt from a toolbox checkout beside
 # this tree, so every step reports a result envelope and its verdict is read
 # from the run's result.yaml. `just toolbox=/path/to/toolbox checks` names
-# another checkout. The jigs call their tools from PATH; uv.lock pins the same
-# tools for the recipes below.
+# another checkout. The jigs call their tools from PATH, and `checks` runs
+# bolt under `uv run --locked`, so the locked environment's bin comes first:
+# its python3, which toolbox's adapters import wrench and yaml from, and the
+# tools uv.lock pins. A tool the environment does not hold, such as bolt or
+# detect-secrets, still comes from the host.
 #
 # common-quality holds traceability, suppressions, wording and secrets. Its
 # `requirements-directory` definitions, which toolbox ships, point it at
@@ -17,8 +20,13 @@ toolbox := "../toolbox"
 
 # everything: the Python jig, then traceability, suppressions, wording and secrets
 checks:
-    @just _verdict python-std-quality --config-dir {{ toolbox }}
-    @just _verdict common-quality --config-dir {{ toolbox }} --definitions requirements-directory
+    @uv run --locked just _verdict python-std-quality --config-dir {{ toolbox }}
+    @uv run --locked just _verdict common-quality --config-dir {{ toolbox }} --definitions requirements-directory
+
+# the python3 `checks` gives the jigs, and the wrench it imports
+gate-env:
+    @uv run --locked which python3
+    @uv pip show wrench
 
 # the writing standard's wording over one commit message; the commit-msg hook passes its file
 wording-commit-msg file:

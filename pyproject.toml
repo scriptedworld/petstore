@@ -33,7 +33,7 @@ dev = [
     "rust-just==1.58.0",
     "vulture>=2.14",
     # toolbox's adapters import wrench and yaml from the python3 on PATH, which
-    # under `uv run just checks` is this environment's.
+    # is this environment's: `just checks` runs bolt under `uv run --locked`.
     "pyyaml>=6",
     "wrench",
 ]

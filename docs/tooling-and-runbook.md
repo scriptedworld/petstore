@@ -84,6 +84,13 @@ the tools the jigs call on `PATH` (ruff, mypy, pylint, complexipy, vulture,
 interrogate, bandit, gitleaks, detect-secrets). bolt's `docs/runbook.md` says
 how to build it and install them, and the Dev Container has them all.
 
+`checks` runs bolt under `uv run --locked`, so the locked environment's `bin`
+is first on `PATH`. Its `python3` is the one toolbox's adapters run under, and
+they import wrench and pyyaml from it, at the versions `uv.lock` pins. The
+tools the environment holds come from it too; bolt, gitleaks and
+detect-secrets come from the host. `just gate-env` prints the `python3` the
+jigs get and the wrench it imports.
+
 The recipes are layered through imports, and the first layer to define a recipe
 wins:
 
