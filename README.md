@@ -296,7 +296,7 @@ commit hash:
 
 ```toml
 [tool.uv.sources]
-petstore = { git = "https://github.com/scriptedworld/petstore", tag = "v0.4.0" }
+petstore = { git = "https://github.com/scriptedworld/petstore", tag = "v0.5.0" }
 ```
 
 A hash in a consumer's `pyproject.toml` reads as a possible secret to
