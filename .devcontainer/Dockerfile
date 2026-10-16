@@ -36,11 +36,6 @@ RUN uv tool install ruff==0.16.4 \
  && uv tool install detect-secrets==1.5.0 \
  && uv tool install rust-just==1.58.0
 
-# toolbox's scripts and adapters run under the python3 on PATH and import these.
-ARG WRENCH_REV=be2e4de16ad449a2dcd974834626175f2318890f
-RUN uv pip install --system --break-system-packages pyyaml \
-    "wrench @ git+https://github.com/scriptedworld/wrench@${WRENCH_REV}#subdirectory=python"
-
 # The gate reads toolbox's jigs from a checkout beside the workspace.
 ARG TOOLBOX_REV=438c6704b356eacbaef741dbe40c7e127f33f84c
 RUN git clone https://github.com/scriptedworld/toolbox /workspaces/toolbox \
