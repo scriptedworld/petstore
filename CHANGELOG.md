@@ -1,3 +1,9 @@
+## v0.5.0 (2026-10-16)
+
+### Feat
+
+- **proc**: give a program its standard input
+
 ## v0.4.0 (2026-10-16)
 
 ### Feat
