@@ -1,3 +1,9 @@
+## v0.4.0 (2026-10-16)
+
+### Feat
+
+- **complexity**: add a timed pass for work a count cannot see
+
 ## v0.3.0 (2026-10-15)
 
 ### Feat
