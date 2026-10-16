@@ -17,7 +17,7 @@ from __future__ import annotations
 import os
 import subprocess  # nosec B404
 import sys
-from typing import IO, TYPE_CHECKING, NamedTuple, NoReturn
+from typing import IO, TYPE_CHECKING, Any, NamedTuple, NoReturn, TypedDict, Unpack, overload
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
@@ -51,16 +51,20 @@ def _run(
     *,
     stdout: _Stream = None,
     stderr: _Stream = None,
+    stdin: str | bytes | None = None,
     where: _Where = _HERE,
-) -> subprocess.CompletedProcess[str]:
+) -> subprocess.CompletedProcess[Any]:
     """Start cmd as a list, never through a shell. Every run below comes here.
 
     The exit status is never checked here; a caller that wants a failure
-    raised asks the result for it.
+    raised asks the result for it. Bytes for stdin run the program without
+    text mode, so a NUL or an undecodable byte reaches it unchanged and its
+    output comes back as bytes.
     """
     return subprocess.run(  # noqa: S603
         list(cmd),  # nosec B603
-        text=True,
+        input=stdin,
+        text=not isinstance(stdin, bytes),
         check=False,
         stdout=stdout,
         stderr=stderr,
@@ -70,22 +74,51 @@ def _run(
     )
 
 
+class _WhereArgs(TypedDict, total=False):
+    """The keywords naming where and for how long, as capture takes them."""
+
+    timeout: float | None
+    cwd: str | Path | None
+    env: Mapping[str, str] | None
+
+
+@overload
 def capture(
     cmd: Sequence[str],
     *,
-    timeout: float | None = None,
+    stdin: bytes,
     check: bool = False,
-    cwd: str | Path | None = None,
-    env: Mapping[str, str] | None = None,
-) -> subprocess.CompletedProcess[str]:
-    """Run to completion with stdout and stderr captured as text.
+    **where: Unpack[_WhereArgs],
+) -> subprocess.CompletedProcess[bytes]: ...
+
+
+@overload
+def capture(
+    cmd: Sequence[str],
+    *,
+    stdin: str | None = None,
+    check: bool = False,
+    **where: Unpack[_WhereArgs],
+) -> subprocess.CompletedProcess[str]: ...
+
+
+def capture(
+    cmd: Sequence[str],
+    *,
+    stdin: str | bytes | None = None,
+    check: bool = False,
+    **where: Unpack[_WhereArgs],
+) -> subprocess.CompletedProcess[str] | subprocess.CompletedProcess[bytes]:
+    """Run to completion with stdout and stderr captured, as text unless stdin is bytes.
 
     Args:
         cmd: The program and its arguments.
-        timeout: Seconds to wait before giving up.
+        stdin: Written to the program's standard input, which is then closed.
+            Bytes run it without text mode and return its output as bytes.
         check: Raise ``Failed`` on a non-zero exit.
-        cwd: The directory the program runs in.
-        env: The program's whole environment, in place of this process's.
+        **where: Any of ``timeout``, the seconds to wait before giving up;
+            ``cwd``, the directory the program runs in; and ``env``, the
+            program's whole environment, in place of this process's.
 
     Returns:
         The finished program, with its exit status and output.
@@ -95,7 +128,7 @@ def capture(
         TimeoutExpired: When timeout passes first.
 
     """
-    finished = _run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, where=_Where(timeout, cwd, env))
+    finished = _run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=stdin, where=_Where(**where))
     if check:
         finished.check_returncode()
     return finished
@@ -116,15 +149,16 @@ def through(cmd: Sequence[str], stdout: IO[str], stderr: IO[str], *, timeout: fl
     return finished.returncode
 
 
-def wait(cmd: Sequence[str]) -> int:
+def wait(cmd: Sequence[str], *, stdin: str | bytes | None = None) -> int:
     """Run with this process's own streams, and return its exit status.
 
     stdout is flushed first: ``print()`` is block-buffered when piped, while
     the child writes straight to the descriptor, so without the flush its
-    output arrives before the heading that introduces it.
+    output arrives before the heading that introduces it. Given stdin, the
+    child reads that instead of this process's standard input.
     """
     sys.stdout.flush()
-    return _run(cmd).returncode
+    return _run(cmd, stdin=stdin).returncode
 
 
 def become(cmd: Sequence[str]) -> NoReturn:

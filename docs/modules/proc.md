@@ -27,6 +27,8 @@ finished = capture(["git", "status", "--short"], cwd="/srv/repo")
 finished.returncode, finished.stdout, finished.stderr
 
 capture(["git", "fetch"], check=True, timeout=30)  # raises Failed or TimeoutExpired
+capture(["sort"], stdin="b\na\n").stdout  # 'a\nb\n'
+capture(["xargs", "-0", "ls"], stdin=b"run.sh\0").stdout  # bytes in, bytes out
 
 through(["make"], sys.stdout, sys.stderr)  # the child writes to these streams
 wait(["less", "README.md"])  # the child uses this process's streams
@@ -37,6 +39,12 @@ become(["python3", "-m", "http.server"])  # replaces this process; never returns
 raises `Failed` on a non-zero exit, `timeout` raises `TimeoutExpired` when it
 passes first, and `env` replaces this process's environment rather than adding
 to it.
+
+`stdin` is written to the program's standard input, which is then closed, so a
+filter such as `sort`, `fzf` or `rofi -dmenu` reads it to the end. A string
+keeps text mode. Bytes run the program without it, so a NUL-separated list or
+an undecodable byte reaches it unchanged, and `capture` returns stdout and
+stderr as bytes. `wait` takes `stdin` too, in place of this process's own.
 
 `through` hands its streams to the child when both have a file descriptor. A
 stream with none, such as a `StringIO`, cannot be given to a child, so the

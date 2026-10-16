@@ -5,6 +5,7 @@ from __future__ import annotations
 import io
 import sys
 from pathlib import Path
+from typing import assert_type
 
 import pytest
 
@@ -131,3 +132,44 @@ def test_capture_runs_in_the_given_directory_with_only_the_given_environment(tmp
     finished = capture(_python(code), cwd=tmp_path, env={"PROBE": "set"}, check=True)
 
     assert finished.stdout.splitlines() == [str(tmp_path.resolve()), "set", "False"]
+
+
+# COVERS FR-6.9 | positive
+def test_capture_writes_a_string_to_standard_input_and_returns_text() -> None:
+    """Verify a string reaches the child's stdin, which is closed after it, and output stays text."""
+    finished = capture(_python("import sys; print(repr(sys.stdin.read()))"), stdin="one\ntwo\n", check=True)
+
+    assert_type(finished, Result[str])
+    assert finished.stdout == "'one\\ntwo\\n'\n"
+
+
+# COVERS FR-6.9 | edge
+def test_an_empty_string_gives_the_child_an_empty_closed_stdin() -> None:
+    """Verify stdin='' is an input of nothing, so a child reading to the end gets no line."""
+    finished = capture(_python("import sys; print(repr(sys.stdin.read()))"), stdin="", check=True)
+
+    assert finished.stdout == "''\n"
+
+
+# COVERS FR-6.9 | positive
+def test_wait_writes_a_string_to_the_child_in_place_of_this_process_stdin() -> None:
+    """Verify wait feeds the child the given string, not the parent's own standard input."""
+    parent = (
+        "from petstore.proc import wait; "
+        f"status = wait([{PYTHON!r}, '-c', 'import sys; print(sys.stdin.read().upper())'], stdin='fed'); "
+        "print(status)"
+    )
+
+    assert capture(_python(parent), stdin="parent's own", check=True).stdout == "FED\n0\n"
+
+
+# COVERS FR-6.10 | positive
+def test_bytes_reach_the_child_unchanged_and_output_returns_as_bytes() -> None:
+    """Verify a NUL and a byte no codec decodes pass through, and both streams come back as bytes."""
+    reverse = "import sys; sys.stdout.buffer.write(sys.stdin.buffer.read()[::-1]); sys.stderr.buffer.write(b'\\xfe')"
+
+    finished = capture(_python(reverse), stdin=b"run.sh\0\xff", check=True)
+
+    assert_type(finished, Result[bytes])
+    assert finished.stdout == b"\xff\0hs.nur"
+    assert finished.stderr == b"\xfe"
