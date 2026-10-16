@@ -1,5 +1,6 @@
 """Tests for petstore.complexity."""
 
+import gc
 import inspect
 import itertools
 import math
@@ -8,7 +9,19 @@ from collections.abc import Callable
 
 import pytest
 
-from petstore.complexity import Complexity, Growth, GrowthClass, Meter, Probe, assert_growth, memory_complexity, time_complexity
+from petstore import ValidationError
+from petstore.complexity import (
+    Clock,
+    Complexity,
+    Growth,
+    GrowthClass,
+    Meter,
+    Probe,
+    Stopwatch,
+    assert_growth,
+    memory_complexity,
+    time_complexity,
+)
 
 Work = Callable[[int, Probe], None]
 Used = Callable[[int, Meter], None]
@@ -364,3 +377,334 @@ def test_superpolynomial_classes_need_only_a_doubling() -> None:
         time_complexity(Complexity.EXPONENTIAL, sizes=(4, 6))
     with pytest.raises(ValueError, match="factor of 10,"):
         time_complexity(Complexity.CUBIC, sizes=(4, 8))
+
+
+REPEATS = 3
+
+
+class ManualClock:
+    """A clock that moves only when a test moves it, counting its reads."""
+
+    def __init__(self) -> None:
+        """Start at zero, never read."""
+        self.now = 0
+        self.reads = 0
+
+    def __call__(self) -> int:
+        """Return the current reading."""
+        self.reads += 1
+        return self.now
+
+
+def manual(clock: ManualClock, tolerance: float = 4.0) -> Clock:
+    """Return a Clock of REPEATS runs reading the manual clock."""
+    return Clock(repeats=REPEATS, tolerance=tolerance, read=clock)
+
+
+# COVERS FR-8.6 | positive
+def test_no_timed_pass_runs_without_a_clock() -> None:
+    """With no clock, the test is called once per size under a counting Probe, and never under a Stopwatch."""
+    calls: list[str] = []
+
+    @time_complexity(Complexity.CONSTANT, sizes=SIZES)
+    def counted(n: int, probe: Probe) -> None:
+        del n
+        calls.append(type(probe).__name__)
+        with probe.counting():
+            pass
+
+    counted()
+
+    assert calls == ["Probe"] * len(SIZES)
+
+
+# COVERS FR-8.6 | negative
+def test_a_failing_count_fails_before_anything_is_timed() -> None:
+    """A Python loop over size fails the counted pass, and the clock is never read."""
+    clock = ManualClock()
+
+    @time_complexity(Complexity.CONSTANT, sizes=SIZES, clock=manual(clock))
+    def python_loop(n: int, probe: Probe) -> None:
+        with probe.counting():
+            for _ in range(n):
+                pass
+
+    with pytest.raises(AssertionError, match="operations counted"):
+        python_loop()
+    assert clock.reads == 0
+
+
+# COVERS FR-8.7 | positive
+def test_a_block_whose_time_stays_flat_passes() -> None:
+    """Time that does not grow with size meets a constant bound."""
+    clock = ManualClock()
+
+    @time_complexity(Complexity.CONSTANT, sizes=SIZES, clock=manual(clock))
+    def flat(n: int, probe: Probe) -> None:
+        del n
+        with probe.counting():
+            clock.now += 5
+
+    flat()
+
+
+# COVERS FR-8.7 | negative
+def test_a_block_whose_time_grows_with_size_fails() -> None:
+    """Time proportional to size breaks a constant bound, though the counted work is flat."""
+    clock = ManualClock()
+
+    @time_complexity(Complexity.CONSTANT, sizes=SIZES, clock=manual(clock))
+    def linear_in_c(n: int, probe: Probe) -> None:
+        with probe.counting():
+            clock.now += n
+
+    with pytest.raises(AssertionError, match=rf"\(nanoseconds, fastest of {REPEATS} runs\)$"):
+        linear_in_c()
+
+
+# COVERS FR-8.7 | positive
+def test_the_fastest_timed_run_at_each_size_is_the_reading() -> None:
+    """One slow timed run per size does not fail a bound the other runs meet."""
+    clock = ManualClock()
+
+    @time_complexity(Complexity.CONSTANT, sizes=SIZES, clock=manual(clock))
+    def first_run_slow(n: int, probe: Probe) -> None:
+        for run, _ in enumerate(probe.runs()):
+            with probe.counting():
+                clock.now += n * 1_000 if run == 0 else 5
+
+    first_run_slow()
+
+
+# COVERS FR-8.7 | edge
+@pytest.mark.parametrize(("tolerance", "passes"), [(4.0, True), (2.0, False)])
+def test_the_clock_tolerance_decides_how_much_growth_passes(tolerance: float, *, passes: bool) -> None:
+    """Time that triples across the sizes meets a constant bound at a tolerance of 4 and breaks it at 2."""
+    clock = ManualClock()
+    elapsed: dict[int, int] = dict(zip(SIZES, (100, 200, 300), strict=True))
+
+    @time_complexity(Complexity.CONSTANT, sizes=SIZES, clock=manual(clock, tolerance=tolerance))
+    def triples(n: int, probe: Probe) -> None:
+        with probe.counting():
+            clock.now += elapsed[n]
+
+    if passes:
+        triples()
+    else:
+        with pytest.raises(AssertionError, match="nanoseconds"):
+            triples()
+
+
+# COVERS FR-8.9 | negative
+def test_every_block_in_a_run_is_timed() -> None:
+    """Linear time in a first block fails even when a second block is cheap."""
+    clock = ManualClock()
+
+    @time_complexity(Complexity.CONSTANT, sizes=SIZES, clock=manual(clock))
+    def two_blocks(n: int, probe: Probe) -> None:
+        with probe.counting():
+            clock.now += n
+        with probe.counting():
+            clock.now += 5
+
+    with pytest.raises(AssertionError, match="nanoseconds"):
+        two_blocks()
+
+
+# COVERS FR-8.9 | negative
+def test_a_timed_run_that_enters_no_block_fails() -> None:
+    """A body that counts on the counted pass but skips its block when timed fails."""
+
+    @time_complexity(Complexity.CONSTANT, sizes=SIZES, clock=manual(ManualClock()))
+    def counted_only(n: int, probe: Probe) -> None:
+        del n
+        if not isinstance(probe, Stopwatch):
+            with probe.counting():
+                pass
+
+    with pytest.raises(AssertionError, match=r"^a timed run never entered probe\.counting\(\)"):
+        counted_only()
+
+
+# COVERS FR-8.9 | negative
+def test_an_iteration_of_runs_that_enters_no_block_fails() -> None:
+    """Every iteration of probe.runs() is a run, and has to enter its block."""
+
+    @time_complexity(Complexity.CONSTANT, sizes=SIZES, clock=manual(ManualClock()))
+    def skips_a_run(n: int, probe: Probe) -> None:
+        del n
+        for run, _ in enumerate(probe.runs()):
+            if run == 0:
+                with probe.counting():
+                    pass
+
+    with pytest.raises(AssertionError, match=r"^a timed run never entered probe\.counting\(\)"):
+        skips_a_run()
+
+
+# COVERS FR-8.12 | negative
+def test_a_block_after_the_runs_loop_fails() -> None:
+    """A block that follows the loop belongs to no run."""
+
+    @time_complexity(Complexity.CONSTANT, sizes=SIZES, clock=manual(ManualClock()))
+    def trailing(n: int, probe: Probe) -> None:
+        del n
+        for _ in probe.runs():
+            with probe.counting():
+                pass
+        with probe.counting():
+            pass
+
+    with pytest.raises(AssertionError, match=r"outside probe\.runs"):
+        trailing()
+
+
+# COVERS FR-8.12 | negative
+def test_a_block_before_the_runs_loop_fails() -> None:
+    """A block that precedes the loop belongs to no run."""
+
+    @time_complexity(Complexity.CONSTANT, sizes=SIZES, clock=manual(ManualClock()))
+    def leading(n: int, probe: Probe) -> None:
+        del n
+        with probe.counting():
+            pass
+        for _ in probe.runs():
+            with probe.counting():
+                pass
+
+    with pytest.raises(AssertionError, match=r"outside probe\.runs"):
+        leading()
+
+
+# COVERS FR-8.13 | negative
+def test_leaving_the_runs_loop_early_fails() -> None:
+    """A call that breaks out of probe.runs() fails rather than being called again forever."""
+
+    @time_complexity(Complexity.CONSTANT, sizes=SIZES, clock=manual(ManualClock()))
+    def breaks_out(n: int, probe: Probe) -> None:
+        del n
+        for _ in probe.runs():
+            with probe.counting():
+                pass
+            break
+
+    with pytest.raises(AssertionError, match=r"left probe\.runs"):
+        breaks_out()
+
+
+# COVERS FR-8.13 | negative
+def test_iterating_runs_twice_in_one_call_fails() -> None:
+    """A second loop over probe.runs() in the same call fails."""
+
+    @time_complexity(Complexity.CONSTANT, sizes=SIZES, clock=manual(ManualClock()))
+    def loops_twice(n: int, probe: Probe) -> None:
+        del n
+        for _ in range(2):
+            for _ in probe.runs():
+                with probe.counting():
+                    pass
+
+    with pytest.raises(AssertionError, match="more than once"):
+        loops_twice()
+
+
+# COVERS FR-8.10 | positive
+def test_runs_yields_once_counted_and_repeats_times_timed() -> None:
+    """Iterating probe.runs() gives one run per counted call and REPEATS per timed call, one call each."""
+    iterations: list[tuple[str, int]] = []
+
+    @time_complexity(Complexity.CONSTANT, sizes=SIZES, clock=manual(ManualClock()))
+    def looping(n: int, probe: Probe) -> None:
+        del n
+        count = 0
+        for _ in probe.runs():
+            count += 1
+            with probe.counting():
+                pass
+        iterations.append((type(probe).__name__, count))
+
+    looping()
+
+    assert iterations == [("Probe", 1)] * len(SIZES) + [("Stopwatch", REPEATS)] * len(SIZES)
+
+
+# COVERS FR-8.10 | positive
+def test_a_test_without_runs_is_called_repeats_times_when_timed() -> None:
+    """Each timed call is one run, and the clock is read only around its block."""
+    clock = ManualClock()
+    calls: list[str] = []
+
+    @time_complexity(Complexity.CONSTANT, sizes=SIZES, clock=manual(clock))
+    def flat(n: int, probe: Probe) -> None:
+        del n
+        calls.append(type(probe).__name__)
+        with probe.counting():
+            clock.now += 1
+
+    flat()
+
+    assert calls == ["Probe"] * len(SIZES) + ["Stopwatch"] * (REPEATS * len(SIZES))
+    assert clock.reads == 2 * REPEATS * len(SIZES)
+
+
+# COVERS FR-8.11 | negative
+@pytest.mark.parametrize(("repeats", "tolerance"), [(0, 4.0), (-1, 4.0), (5, 1.0), (5, 0.5), (5, math.nan)])
+def test_a_clock_that_cannot_give_a_reading_is_refused(repeats: int, tolerance: float) -> None:
+    """No repeats, or a tolerance that fails an unchanging time, is refused at construction."""
+    with pytest.raises(ValidationError):
+        Clock(repeats=repeats, tolerance=tolerance)
+
+
+# COVERS FR-8.8 | positive
+def test_a_timed_block_runs_without_garbage_collection_and_plain_keys() -> None:
+    """Inside a timed block collection is off and keys are exact ints; outside, collection is back on."""
+    seen: list[tuple[bool, type]] = []
+
+    @time_complexity(Complexity.CONSTANT, sizes=SIZES, clock=manual(ManualClock()))
+    def record(n: int, probe: Probe) -> None:
+        with probe.counting():
+            seen.append((gc.isenabled(), type(probe.key(n))))
+
+    record()
+
+    assert seen[len(SIZES) :] == [(False, int)] * (REPEATS * len(SIZES))
+    assert gc.isenabled()
+
+
+# COVERS FR-8.8 | edge
+def test_garbage_collection_left_off_stays_off() -> None:
+    """A test that runs with collection off finds it still off afterwards."""
+
+    @time_complexity(Complexity.CONSTANT, sizes=SIZES, clock=manual(ManualClock()))
+    def empty(n: int, probe: Probe) -> None:
+        del n
+        with probe.counting():
+            pass
+
+    gc.disable()
+    try:
+        empty()
+        assert not gc.isenabled()
+    finally:
+        gc.enable()
+
+
+class BlockFailedError(Exception):
+    """Raised inside a timed block by the test below."""
+
+
+# COVERS FR-8.8 | edge
+def test_garbage_collection_comes_back_after_a_block_raises() -> None:
+    """A timed block that raises still leaves collection on, and the error reaches the caller."""
+
+    @time_complexity(Complexity.CONSTANT, sizes=SIZES, clock=manual(ManualClock()))
+    def raises_when_timed(n: int, probe: Probe) -> None:
+        del n
+        with probe.counting():
+            if isinstance(probe, Stopwatch):
+                raise BlockFailedError
+
+    with pytest.raises(BlockFailedError):
+        raises_when_timed()
+
+    assert gc.isenabled()

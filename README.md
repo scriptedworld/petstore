@@ -5,7 +5,7 @@ assignment and `validate` for plain values such as arguments, `Stub` for
 testing code through its IO seams, a cross-process path lock, a zip with four
 termination policies, one place to start other programs from, counters and
 measures with exact summaries and quantiles, and test decorators that hold
-code to a time or memory complexity. Python 3.12 or later, typed.
+code to a time or memory complexity. Python 3.14 or later, typed.
 
 ## Install
 
@@ -240,27 +240,37 @@ with a lock.
 The module guide is [`docs/modules/complexity.md`](docs/modules/complexity.md).
 
 `petstore.complexity` holds code to a time or memory complexity in an ordinary
-test, by running the same work at several sizes and comparing a deterministic
-measure, never a timing:
+test, by running the same work at several sizes and comparing how a measure
+grows:
 
 ```python
-from petstore.complexity import Complexity, Probe, time_complexity
+from petstore.complexity import Clock, Complexity, Probe, time_complexity
 
 
-@time_complexity(Complexity.CONSTANT, sizes=(10, 100, 1_000))
+@time_complexity(Complexity.CONSTANT, sizes=(100, 1_000, 10_000, 100_000), clock=Clock())
 def test_get_is_constant(n: int, probe: Probe) -> None:
-    cache = filled(n)  # setup: not counted
-    with probe.counting():
-        cache.get(probe.key(0))  # the work: counted
+    cache = filled(n)  # setup, not measured: your container holding keys 0 to n - 1
+    for run, _ in enumerate(probe.runs()):
+        key = probe.key(n // 4 + run % (n // 2))  # midway, where a scan arrives late
+        with probe.counting():
+            cache.get(key)  # the work: measured
 ```
 
 A `Probe` counts every bytecode instruction run inside `counting()`, and every
-hash and comparison on a key from `probe.key()`, which catches work inside C
-builtins. `memory_complexity` does the same with `tracemalloc`, for retained or
-peak bytes. `Complexity` runs from `CONSTANT` to `FACTORIAL`, and `Growth`
-makes any other class. A test that never enters its counting block fails
-rather than passing on nothing. Not thread-safe: `sys.monitoring` is
-process-wide, so run these with no other threads busy.
+hash and comparison on a key from `probe.key()`. That count is the same on
+every run, and it cannot see a builtin that never hashes or compares the probe
+key: `list(d)` or `sum(d.values())` added to an O(1) operation passes it.
+`clock=Clock()` adds a timed pass that does see them, the fastest of 50 runs
+per size held to the bound; it is off by default, because a timing depends on
+the machine. Probe a key midway through the structure's order, or a missing
+one: a scan finds the first key at once.
+
+`memory_complexity` reads `tracemalloc`, for retained or peak bytes.
+`Complexity` runs from `CONSTANT` to `FACTORIAL`, and `Growth` makes any other
+class. A test that measures nothing fails rather than passing. Not thread-safe:
+`sys.monitoring` is process-wide, so run these with no other threads busy. The
+guide covers which sizes a test needs, what each measure misses, and how to
+show a test failing.
 
 ## Developing petstore
 

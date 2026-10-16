@@ -1,55 +1,55 @@
 """Test decorators that hold code to a time or memory complexity.
 
 A complexity claim is checked by running the same work at several sizes and
-comparing how a deterministic measure grows, never by timing it:
+comparing how a measure grows:
 
-    @time_complexity(Complexity.CONSTANT, sizes=(10, 100, 1_000))
+    @time_complexity(Complexity.CONSTANT, sizes=(100, 1_000, 10_000, 100_000), clock=Clock())
     def test_get_is_constant(n: int, probe: Probe) -> None:
-        cache = filled(n)                  # setup: not counted
-        with probe.counting():
-            cache.get(probe.key(0))        # the work: counted
+        cache = filled(n)                            # setup, not measured: n entries
+        for run, _ in enumerate(probe.runs()):
+            key = probe.key(n // 4 + run % (n // 2))  # midway, where a scan arrives late
+            with probe.counting():
+                cache.get(key)                       # the work: measured
 
     @memory_complexity(Complexity.CONSTANT, sizes=(1_000, 10_000, 100_000))
     def test_memory_stays_bounded(n: int, meter: Meter) -> None:
-        cache = Cache(capacity=10)
+        cache = Cache(capacity=10)                   # any container of fixed capacity
         with meter.measuring():
             for i in range(n):
                 cache.put(i, i)
 
-Inside ``counting()`` a ``Probe`` counts two kinds of work, so neither hides:
+``time_complexity`` counts first. Inside ``counting()`` a ``Probe`` counts
+every bytecode instruction run, through ``sys.monitoring``, and every hash and
+comparison made on a key from ``probe.key()``, so ``key in some_list`` counts
+n comparisons in one instruction. The count is the same on every run for a
+given Python version with no other threads running. It cannot see a builtin
+that walks a container without hashing or comparing a probe key: ``list(d)``,
+``sum(d.values())`` and ``[None] * len(d)`` run no instruction it counts.
 
-    every bytecode instruction     catches loops in Python code, however they
-    executed                       reach their data (via ``sys.monitoring``),
-                                   including loops packed into one line such
-                                   as a comprehension
-    every hash and comparison on   catches work inside C builtins, where
-    a key from ``probe.key()``     ``key in some_list`` compares n times in
-                                   one line
+``clock=Clock()`` adds a timed pass, which sees that work. Once the counts
+pass, the test runs again under a ``Stopwatch``, ``Clock.repeats`` runs per
+size, and the fastest run at each size is held to the bound within
+``Clock.tolerance``. It is off by default, because a timing depends on the
+machine where a count does not. ``probe.runs()`` repeats a block on one setup:
+it yields once when counted and ``Clock.repeats`` times when timed.
 
-``granularity="lines"`` counts lines instead: faster, but blind to a loop
-that stays on one line, so a comprehension over n items reads as constant.
-``probe.tick(n)`` counts anything else by hand. A ``Meter`` reads memory with
-``tracemalloc`` inside ``measuring()``: what the block leaves allocated, or with
-``measure="peak"`` the most it allocated at once, so auxiliary space can be held
-to a bound as well as retained space.
+A ``Meter`` reads ``tracemalloc`` inside ``measuring()``: what the block leaves
+allocated after a collection, or with ``measure="peak"`` the most it held at
+once, so a copy thrown away inside the block still shows.
 
 A growth is an upper bound, like the O it stands for. Divided by the growth
 function, the measure at every size must stay within ``tolerance`` times its
-value at the smallest size. Sizes must span a factor large enough for a wrong
-class to show: 10 for polynomial classes (linear work held to constant over
-sizes 10 to 1,000 grows 100 times, far past the default tolerance of 2), 2 for
-exponential and factorial ones, whose growth shows within a doubling and which
-could not be run over a wider span anyway.
+value at the smallest size. Sizes must span a factor of 10 for polynomial
+classes and 2 for exponential and factorial ones. ``Complexity`` names the
+usual classes; ``Growth`` makes any other. A decorated test takes no arguments,
+so pytest runs it as it is, and a test that measures nothing fails.
 
-``Complexity`` names the usual classes, from constant to factorial; ``Growth``
-makes any other, such as ``Growth("n^4", lambda n: n**4)``. Growth is compared
-in log space, so a growth function may return an int too large for a float. A test that never enters its counting or
-measuring block fails rather than passing on nothing. A decorated test takes no
-arguments, so pytest runs it as it is.
+``docs/modules/complexity.md`` is the guide: what each measure sees, how to
+choose sizes and keys, and how to show a test failing.
 
 Not thread-safe, and only meaningful single-threaded: ``sys.monitoring`` events
-are process-wide, so a Probe also counts instructions that other threads run
-while ``counting()`` is open. Run complexity tests with no other threads busy.
+are process-wide, so a Probe also counts what other threads run while
+``counting()`` is open, and a timed block absorbs it.
 """
 
 from __future__ import annotations
@@ -57,6 +57,7 @@ from __future__ import annotations
 import gc
 import math
 import sys
+import time
 import tracemalloc
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -64,16 +65,20 @@ from enum import Enum
 from itertools import pairwise
 from typing import TYPE_CHECKING, Literal, Protocol, Self
 
+from .validation import ValidationError, validate
+
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator, Sequence
     from types import CodeType
 
 __all__ = [
+    "Clock",
     "Complexity",
     "Growth",
     "GrowthClass",
     "Meter",
     "Probe",
+    "Stopwatch",
     "assert_growth",
     "memory_complexity",
     "time_complexity",
@@ -271,6 +276,10 @@ class Probe:
         if self._counting:
             self.count += n
 
+    def runs(self) -> Iterator[None]:
+        """Yield once: a count does not vary from run to run, so one run is the reading."""
+        yield
+
     def _step(self, code: CodeType, where: int) -> None:
         del code, where
         self.tick()
@@ -292,6 +301,111 @@ class Probe:
             self._counting = False
             monitoring.register_callback(tool, event, None)
             monitoring.free_tool_id(tool)
+
+
+def _at_least_one(value: int) -> None:
+    if value < 1:
+        message = f"must be at least 1, not {value!r}"
+        raise ValidationError(message)
+
+
+def _above_one(value: float) -> None:
+    if not value > 1:
+        message = f"must be more than 1, not {value!r}"
+        raise ValidationError(message)
+
+
+@dataclass(frozen=True)
+class Clock:
+    """How the timed pass runs: timed runs per size, the growth it allows, and the clock it reads in nanoseconds."""
+
+    repeats: int = 50
+    tolerance: float = 4.0
+    read: Callable[[], int] = time.perf_counter_ns
+
+    def __post_init__(self) -> None:
+        """Refuse settings that cannot give a reading."""
+        validate(self.repeats, _at_least_one, label="repeats")
+        validate(self.tolerance, _above_one, label="tolerance")
+
+
+def _outside_runs() -> None:
+    message = "probe.counting() outside probe.runs() belongs to no run; put every block inside the loop"
+    raise AssertionError(message)
+
+
+class Stopwatch(Probe):
+    """A Probe whose runs are timed rather than counted, and whose keys are plain ints.
+
+    Until the test iterates runs(), the whole call is one run. tick() does
+    nothing here: a timed run reads only the clock.
+    """
+
+    def __init__(self, clock: Clock) -> None:
+        """Start one run, timed by clock.read."""
+        super().__init__()
+        self._clock = clock
+        self._times: list[int] = []
+        self._run = 0
+        self._run_entered = False
+        self._iterated = False
+        self._exhausted = False
+        self._open = True
+
+    def key(self, value: int) -> int:
+        """Return value itself, so the probe adds no work to what is timed."""
+        return value
+
+    def runs(self) -> Iterator[None]:
+        """Yield Clock.repeats times, each iteration one run; a block outside the loop fails the test."""
+        if self._iterated:
+            message = "probe.runs() iterated more than once in one call; iterate it once"
+            raise AssertionError(message)
+        if self._run_entered:
+            _outside_runs()
+        self._iterated = True
+        self._open = False
+        for _ in range(self._clock.repeats):
+            self._run, self._run_entered, self._open = 0, False, True
+            try:
+                yield
+            finally:
+                self._open = False
+            self._close_run()
+        self._exhausted = True
+
+    def times(self) -> list[int]:
+        """Return the time of every run, closing the whole-call run if runs() was never iterated."""
+        if not self._iterated:
+            self._close_run()
+        elif not self._exhausted:
+            # Calling the test again would leave early again, forever.
+            message = "the test left probe.runs() before it was exhausted; iterate it in full"
+            raise AssertionError(message)
+        return self._times
+
+    def _close_run(self) -> None:
+        if not self._run_entered:
+            message = "a timed run never entered probe.counting(), so it measured nothing"
+            raise AssertionError(message)
+        self._times.append(self._run)
+
+    @contextmanager
+    def counting(self) -> Iterator[None]:
+        """Time the block into the current run with garbage collection off, then leave collection as it was found."""
+        if not self._open:
+            _outside_runs()
+        self.entered = self._run_entered = True
+        collecting = gc.isenabled()
+        gc.disable()
+        read = self._clock.read
+        try:
+            start = read()
+            yield
+            self._run += read() - start
+        finally:
+            if collecting:
+                gc.enable()
 
 
 class Meter:
@@ -339,25 +453,46 @@ def _require_entered(test: Callable[..., object], block: str, *, entered: bool) 
         raise AssertionError(message)
 
 
+def _counts(test: Callable[[int, Probe], None], sizes: Sequence[int], granularity: Granularity) -> list[int]:
+    """Run test once per size under a fresh counting Probe and return the counts."""
+    counts = []
+    for n in sizes:
+        probe = Probe(granularity)
+        test(n, probe)
+        _require_entered(test, "probe.counting()", entered=probe.entered)
+        counts.append(probe.count)
+    return counts
+
+
+def _fastest(test: Callable[[int, Probe], None], n: int, clock: Clock) -> int:
+    """Run test at size n under fresh Stopwatches until clock.repeats runs are timed, and return the fastest."""
+    times: list[int] = []
+    while len(times) < clock.repeats:
+        watch = Stopwatch(clock)
+        test(n, watch)
+        times.extend(watch.times())
+    return min(times)
+
+
 def time_complexity(
     growth: GrowthClass,
     *,
     sizes: Sequence[int],
     tolerance: float = DEFAULT_TOLERANCE,
     granularity: Granularity = "instructions",
+    clock: Clock | None = None,
 ) -> Callable[[Callable[[int, Probe], None]], Callable[[], None]]:
-    """Hold a test's counted work, run at each size with a fresh Probe counting at granularity, to growth."""
+    """Hold a test's counted work to growth within tolerance, then, given a clock, its fastest timed run within clock.tolerance."""
     _check_sizes(sizes, growth.min_span)
 
     def decorate(test: Callable[[int, Probe], None]) -> Callable[[], None]:
         def run() -> None:
-            counts = []
-            for n in sizes:
-                probe = Probe(granularity)
-                test(n, probe)
-                _require_entered(test, "probe.counting()", entered=probe.entered)
-                counts.append(probe.count)
-            _assert_labelled(growth, sizes, counts, tolerance=tolerance, unit=_Unit("operations counted", 1))
+            counted = _Unit("operations counted", 1)
+            _assert_labelled(growth, sizes, _counts(test, sizes, granularity), tolerance=tolerance, unit=counted)
+            if clock is None:
+                return
+            timed = _Unit(f"nanoseconds, fastest of {clock.repeats} runs", 1)
+            _assert_labelled(growth, sizes, [_fastest(test, n, clock) for n in sizes], tolerance=clock.tolerance, unit=timed)
 
         return _named_like(run, test)
 
