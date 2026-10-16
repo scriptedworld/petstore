@@ -31,10 +31,10 @@ specification. Container creation performs a frozen synchronization from
 The image carries everything `just checks` needs, each pinned in
 `.devcontainer/Dockerfile`:
 
-- bolt, built from a pinned commit together with the wrench checkout it
-  builds against (`BOLT_REV`, `WRENCH_REV`);
+- bolt, built from its release tag together with the wrench Rust pack it
+  builds against, at that pack's tag (`BOLT_TAG`, `WRENCH_TAG`);
 - a toolbox checkout at `/workspaces/toolbox`, beside the workspace
-  (`TOOLBOX_REV`);
+  (`TOOLBOX_TAG`);
 - gitleaks, from its release image's tag;
 - ruff, pylint, complexipy, vulture, interrogate, bandit, detect-secrets and
   just, through `uv tool install` at the versions `uv.lock` holds, first on

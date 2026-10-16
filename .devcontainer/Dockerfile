@@ -1,16 +1,17 @@
 FROM ghcr.io/astral-sh/uv:0.12.6@sha256:88bc6eb1ccd4b82efd0e1b530caffabddf50dc2bf612e66c14ea25b8ee8a4d3d AS uv
 
-# bolt, which runs the gate's jigs, built from a pinned commit. It takes wrench
-# by path from a checkout beside it, so both are cloned as siblings. bolt
-# publishes no Cargo.lock, so its crates.io dependencies resolve at build time.
+# bolt, which runs the gate's jigs, built from a release tag. It takes wrench
+# by path from a checkout beside it, so both are cloned as siblings, wrench at
+# its Rust pack's tag. bolt publishes no Cargo.lock, so its crates.io
+# dependencies resolve at build time.
 FROM rust:1.97-bookworm AS bolt
-ARG BOLT_REV=e7ed512ce3e160128570bec7776bca4881b6a4ce
-ARG WRENCH_REV=be2e4de16ad449a2dcd974834626175f2318890f
+ARG BOLT_TAG=v0.1.0
+ARG WRENCH_TAG=rust/v0.5.0
 WORKDIR /src
 RUN git clone https://github.com/scriptedworld/bolt \
- && git -C bolt checkout --quiet ${BOLT_REV} \
+ && git -C bolt checkout --quiet ${BOLT_TAG} \
  && git clone https://github.com/scriptedworld/wrench \
- && git -C wrench checkout --quiet ${WRENCH_REV} \
+ && git -C wrench checkout --quiet ${WRENCH_TAG} \
  && cargo build --release --manifest-path bolt/Cargo.toml \
  && install -D bolt/target/release/bolt /opt/bolt/bin/bolt
 
@@ -37,7 +38,7 @@ RUN uv tool install ruff==0.16.4 \
  && uv tool install rust-just==1.58.0
 
 # The gate reads toolbox's jigs from a checkout beside the workspace.
-ARG TOOLBOX_REV=438c6704b356eacbaef741dbe40c7e127f33f84c
+ARG TOOLBOX_TAG=v0.1.0
 RUN git clone https://github.com/scriptedworld/toolbox /workspaces/toolbox \
- && git -C /workspaces/toolbox checkout --quiet ${TOOLBOX_REV} \
+ && git -C /workspaces/toolbox checkout --quiet ${TOOLBOX_TAG} \
  && chown -R vscode:vscode /workspaces/toolbox
