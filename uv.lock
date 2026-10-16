@@ -751,7 +751,7 @@ dev = [
     { name = "ruff", specifier = ">=0.12.10" },
     { name = "rust-just", specifier = "==1.58.0" },
     { name = "vulture", specifier = ">=2.14" },
-    { name = "wrench", git = "https://github.com/scriptedworld/wrench?subdirectory=python&rev=be2e4de16ad4" },
+    { name = "wrench", git = "https://github.com/scriptedworld/wrench?subdirectory=python&tag=python%2Fv0.5.0" },
 ]
 
 [[package]]
@@ -1214,8 +1214,8 @@ wheels = [
 
 [[package]]
 name = "wrench"
-version = "0.4.0"
-source = { git = "https://github.com/scriptedworld/wrench?subdirectory=python&rev=be2e4de16ad4#be2e4de16ad449a2dcd974834626175f2318890f" }
+version = "0.5.0"
+source = { git = "https://github.com/scriptedworld/wrench?subdirectory=python&tag=python%2Fv0.5.0#eda56ec3d5e0595d86e164f2ee26398509f6edcf" }
 dependencies = [
     { name = "jsonschema" },
     { name = "referencing" },
