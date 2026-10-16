@@ -51,6 +51,7 @@ tag_format = "v$version"
 annotated_tag = true
 major_version_zero = true
 update_changelog_on_bump = true
+template = "CHANGELOG.md.j2"
 # uv.lock records the project's own version, so it is relocked inside the bump
 # and committed with it; the gate's `uv run --locked` would refuse it otherwise.
 pre_bump_hooks = ["uv lock"]

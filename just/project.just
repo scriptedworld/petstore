@@ -129,6 +129,10 @@ hooks-run:
 commit:
     uv run cz commit
 
+# print the whole changelog as CHANGELOG.md.j2 renders it, writing nothing
+changelog-preview:
+    uv run cz changelog --dry-run
+
 # check a commit message is a Conventional Commit; the commit-msg hook passes its file
 commit-check *args:
     uv run cz check {{ args }}
