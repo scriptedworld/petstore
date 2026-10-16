@@ -140,6 +140,6 @@ def _has_descriptor(stream: IO[str]) -> bool:
     """Whether a child process can write to stream directly."""
     try:
         stream.fileno()
-    except (AttributeError, OSError, ValueError):
+    except AttributeError, OSError, ValueError:
         return False
     return True

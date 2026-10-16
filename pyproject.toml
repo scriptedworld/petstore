@@ -3,7 +3,7 @@ name = "petstore"
 version = "0.3.0"
 description = "Small, reusable tools for personal Python development."
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.14"
 license = "Apache-2.0"
 authors = [{ name = "J W" }]
 dependencies = []
@@ -33,9 +33,9 @@ dev = [
     "rust-just==1.58.0",
     "vulture>=2.14",
     # toolbox's adapters import wrench and yaml from the python3 on PATH, which
-    # under `uv run just checks` is this environment's. wrench needs 3.12.
+    # under `uv run just checks` is this environment's.
     "pyyaml>=6",
-    "wrench; python_version >= '3.12'",
+    "wrench",
 ]
 
 [tool.uv.sources]
@@ -75,7 +75,7 @@ skip_covered = false
 
 [tool.ruff]
 line-length = 150
-target-version = "py312"
+target-version = "py314"
 
 [tool.ruff.lint]
 select = ["ALL"]
@@ -94,12 +94,12 @@ ignore = [
 max-complexity = 15
 
 [tool.mypy]
-python_version = "3.12"
+python_version = "3.14"
 strict = true
 files = ["src", "tests"]
 
 [tool.pylint.main]
-py-version = "3.12"
+py-version = "3.14"
 recursive = true
 ignore-paths = ['^\.venv/']
 
