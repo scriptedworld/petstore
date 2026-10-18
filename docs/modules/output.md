@@ -44,7 +44,7 @@ def main() -> int:
     return 0
 ```
 
-    python -m template.new list ~/interview 2>&1 | python -m petstore.output
+    python -m template.new list projects 2>&1 | python -m petstore.output
 
 ## The entry
 
