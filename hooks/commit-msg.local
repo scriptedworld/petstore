@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# .pre-commit-config.yaml's commit-msg stage over the message file git passes.
+# `just hooks` links this into the repository's hooks directory as
+# commit-msg.local on a machine whose global core.hooksPath dispatches to it,
+# where pre-commit will not install.
+set -euo pipefail
+exec uv run pre-commit run --hook-stage commit-msg --commit-msg-filename "${1:?git passes the message file}"

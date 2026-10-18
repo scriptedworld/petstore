@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# .pre-commit-config.yaml's pre-commit stage, over the staged files, which is
+# what a hook `pre-commit install` writes does. `just hooks` links this into
+# the repository's hooks directory as pre-commit.local on a machine whose
+# global core.hooksPath dispatches to it, where pre-commit will not install.
+set -euo pipefail
+exec uv run pre-commit run --hook-stage pre-commit

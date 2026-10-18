@@ -120,14 +120,37 @@ release *bump_args:
     git push --follow-tags origin main
     git ls-remote --tags origin "v$version"
 
-# `hooks` refuses on any machine with a global core.hooksPath, including the
-# development host: git reads no .git/hooks there, and pre-commit will not
-# install into a directory git ignores. It works in the devcontainer and
-# anywhere else core.hooksPath is unset.
+# With core.hooksPath unset, `hooks` is pre-commit's own install. With it set,
+# git reads that directory and no repository's hooks, and pre-commit refuses to
+# install. A global hooks directory whose pre-commit and commit-msg run a
+# repository's `<git dir>/hooks/<name>.local` still reaches petstore's: `hooks`
+# links hooks/pre-commit.local and hooks/commit-msg.local there, and they run
+# .pre-commit-config.yaml. It refuses a global hook that is not executable or
+# names no .local hook outside a comment, and a .local hook, dangling or not,
+# that is not already its own link, rather than leave hooks that plainly never
+# run or replace somebody else's. Naming the .local hook is all it checks; it
+# cannot prove the global hook calls it.
 
 # install the pre-commit and commit-msg hooks
 hooks:
-    uv run pre-commit install --install-hooks
+    #!/usr/bin/env bash
+    set -euo pipefail
+    hooks_path=$(git config --type=path --get core.hooksPath || true)
+    if [ -z "$hooks_path" ]; then exec uv run pre-commit install --install-hooks; fi
+    top=$(git rev-parse --show-toplevel)
+    case "$hooks_path" in /*) ;; *) hooks_path="$top/$hooks_path" ;; esac
+    local_dir="$(git rev-parse --absolute-git-dir)/hooks"
+    for name in pre-commit commit-msg; do
+        if [ ! -x "$hooks_path/$name" ] || ! grep -qs "^[^#]*$name\.local" "$hooks_path/$name"; then echo "refused: core.hooksPath is $hooks_path, whose $name is not executable or names no $name.local outside a comment" >&2; exit 1; fi
+        target="$local_dir/$name.local"
+        if { [ -e "$target" ] || [ -L "$target" ]; } && [ "$(readlink -f "$target")" != "$top/hooks/$name.local" ]; then echo "refused: $target exists and is not a link to hooks/$name.local" >&2; exit 1; fi
+    done
+    mkdir -p "$local_dir"
+    for name in pre-commit commit-msg; do
+        ln -sfn "$top/hooks/$name.local" "$local_dir/$name.local"
+        echo "$name.local linked at $local_dir/$name.local, run by $hooks_path/$name"
+    done
+    uv run pre-commit install-hooks
 
 # run every file-oriented pre-commit hook across the tree
 hooks-run:

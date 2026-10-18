@@ -39,6 +39,7 @@ exists for. `docs/architecture/function-boundaries.md` is the pattern.
     docs/architecture/     the IO seam pattern
     docs/tooling-and-runbook.md   setup, the gate, the hooks, troubleshooting
     Justfile, just/        the recipes; just/project.just is petstore's own
+    hooks/                 the .local hooks `just hooks` links under a global core.hooksPath
     README.md              the front door, for somebody arriving cold
 
 ## Requirements

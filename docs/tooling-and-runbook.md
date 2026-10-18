@@ -174,9 +174,18 @@ All commit messages must follow Conventional Commits. The normal workflow is:
 uv run just commit
 ```
 
-`pre-commit` refuses to install on a machine where git's `core.hooksPath` is set
-globally, because git then reads no repository's `.git/hooks`. The Dev Container
-does not set it, so the hooks install and run there.
+`uv run just hooks` installs them. Where git's `core.hooksPath` is unset, that
+is `pre-commit install`. Where it is set, git reads that directory and no
+repository's `.git/hooks`, and `pre-commit` refuses to install. A hooks
+directory whose `pre-commit` and `commit-msg` run the repository's
+`.git/hooks/pre-commit.local` and `.git/hooks/commit-msg.local` still reaches
+petstore's: `just hooks` links `hooks/pre-commit.local` and
+`hooks/commit-msg.local` there, and those run `.pre-commit-config.yaml`, so a
+commit runs the global hooks and then petstore's. `just hooks` refuses a global
+hook that is not executable or does not name its `.local` hook outside a
+comment, rather than install hooks that plainly never run; it cannot prove the
+global hook calls it. The Dev Container does not set `core.hooksPath`, so the
+hooks install and run there.
 
 ## Module documentation and requirements
 
@@ -267,6 +276,10 @@ Run `uv lock`, review the dependency changes, then rerun `uv sync --frozen` and
 ### Hooks are missing
 
 Run `uv run just hooks`. Hook installation requires a functional Git repository.
+Where it refuses because of the hooks `core.hooksPath` names, the hooks
+directory has to run `<git dir>/hooks/pre-commit.local` and
+`<git dir>/hooks/commit-msg.local`; unsetting `core.hooksPath` instead drops
+whatever global hooks it holds.
 
 ### A quality tool needs a cache directory
 
