@@ -42,3 +42,9 @@ ARG TOOLBOX_TAG=v0.1.0
 RUN git clone https://github.com/scriptedworld/toolbox /workspaces/toolbox \
  && git -C /workspaces/toolbox checkout --quiet ${TOOLBOX_TAG} \
  && chown -R vscode:vscode /workspaces/toolbox
+
+# devcontainer.json mounts the uv cache volume at .cache/uv. Docker creates a
+# mount point the image lacks, and its parents, as root, and a new volume takes
+# the mount point's owner, so both exist here owned by vscode first. pre-commit
+# writes its own cache beside it in .cache.
+RUN install -d -o vscode -g vscode ~vscode/.cache ~vscode/.cache/uv

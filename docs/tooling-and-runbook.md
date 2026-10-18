@@ -274,6 +274,17 @@ Use a writable cache directory appropriate to the environment. CI and container
 configuration should supply this explicitly, so no tool writes into an
 unavailable host home directory.
 
+In the Dev Container, uv's cache is the `petstore-uv-cache` volume. The image
+creates its mount point owned by `vscode`, and a new or empty volume takes that
+owner. A volume an older image left owned by root that already holds files
+keeps root as owner, and `uv sync` then fails with `Permission denied` on
+`.cache/uv/CACHEDIR.TAG`. It holds only a cache, so
+remove the container, then the volume, then rebuild:
+
+```console
+docker volume rm petstore-uv-cache
+```
+
 ### A finding appears incorrect
 
 Fix or restructure the code first. Where a suppression is genuinely necessary,
