@@ -13,5 +13,8 @@ dist/
 build/
 *.egg-info/
 
+# The host's global git hooks, copied in by .devcontainer/copy-host-hooks.sh
+.devcontainer/host-git-hooks/
+
 # Transient working files
 .ephemera/

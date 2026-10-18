@@ -12,7 +12,9 @@
   "mounts": [
     "source=petstore-uv-cache,target=/home/vscode/.cache/uv,type=volume"
   ],
-  "postCreateCommand": "uv sync --frozen && (git rev-parse --git-dir >/dev/null 2>&1 && uv run just hooks || true)",
+  "initializeCommand": "bash .devcontainer/copy-host-hooks.sh",
+  "postCreateCommand": "bash .devcontainer/lifecycle.sh create",
+  "postAttachCommand": "bash .devcontainer/lifecycle.sh attach",
   "customizations": {
     "vscode": {
       "extensions": [

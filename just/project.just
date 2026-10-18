@@ -125,11 +125,12 @@ release *bump_args:
 # install. A global hooks directory whose pre-commit and commit-msg run a
 # repository's `<git dir>/hooks/<name>.local` still reaches petstore's: `hooks`
 # links hooks/pre-commit.local and hooks/commit-msg.local there, and they run
-# .pre-commit-config.yaml. It refuses a global hook that is not executable or
-# names no .local hook outside a comment, and a .local hook, dangling or not,
-# that is not already its own link, rather than leave hooks that plainly never
-# run or replace somebody else's. Naming the .local hook is all it checks; it
-# cannot prove the global hook calls it.
+# .pre-commit-config.yaml. The links are relative, so the host and the
+# devcontainer, which share .git/hooks, each resolve them. It refuses a global
+# hook that is not executable or names no .local hook outside a comment, and a
+# .local hook, dangling or not, that is not already its own link, rather than
+# leave hooks that plainly never run or replace somebody else's. Naming the
+# .local hook is all it checks; it cannot prove the global hook calls it.
 
 # install the pre-commit and commit-msg hooks
 hooks:
@@ -147,7 +148,7 @@ hooks:
     done
     mkdir -p "$local_dir"
     for name in pre-commit commit-msg; do
-        ln -sfn "$top/hooks/$name.local" "$local_dir/$name.local"
+        ln -sfn "$(realpath --relative-to="$local_dir" "$top/hooks/$name.local")" "$local_dir/$name.local"
         echo "$name.local linked at $local_dir/$name.local, run by $hooks_path/$name"
     done
     uv run pre-commit install-hooks

@@ -26,7 +26,10 @@ Examples include `pyproject.toml`, `uv.lock`, and `.devcontainer/devcontainer.js
 
 Open the repository using a client that implements the Development Container
 specification. Container creation performs a frozen synchronization from
-`uv.lock` and installs the Git hooks when Git metadata is available.
+`uv.lock` and installs the Git hooks when Git metadata is available, with the
+host's global hooks when the host has them ("Pre-commit and commits" below).
+A failing step is reported as an error, with its output, and no later
+lifecycle command runs.
 
 The image carries everything `just checks` needs, each pinned in
 `.devcontainer/Dockerfile`:
@@ -184,8 +187,26 @@ petstore's: `just hooks` links `hooks/pre-commit.local` and
 commit runs the global hooks and then petstore's. `just hooks` refuses a global
 hook that is not executable or does not name its `.local` hook outside a
 comment, rather than install hooks that plainly never run; it cannot prove the
-global hook calls it. The Dev Container does not set `core.hooksPath`, so the
-hooks install and run there.
+global hook calls it. The links are relative, so one link resolves both on the
+host and in the Dev Container, which share `.git/hooks`.
+
+In the Dev Container, the client copies the host's git config in, and its
+`core.hooksPath` names a host directory the container lacks. So before the
+container is created, `.devcontainer/copy-host-hooks.sh` copies whatever the
+host's `core.hooksPath` names into `.devcontainer/host-git-hooks/`, which git
+ignores. `.devcontainer/lifecycle.sh` then points the container's
+`core.hooksPath` at that copy, on creation and again on every attach. A commit
+in the container then runs the host's global hooks and then petstore's. A
+copied hook that finds toolbox as its directory's `../../../toolbox` finds the
+image's `/workspaces/toolbox`.
+
+On a host with no `core.hooksPath`, nothing is copied. The container then
+unsets `core.hooksPath`, installs petstore's hooks with `pre-commit install`,
+and prints a notice in the create output, and on each attach, that no global
+hook runs on a commit there. A copy that lacks an executable `pre-commit` or
+`commit-msg`, or a host git config that cannot be read, is refused rather than
+treated as no hooks. A failing step shows in the output, the client reports
+the creation as an error, and no later lifecycle command runs.
 
 ## Module documentation and requirements
 
