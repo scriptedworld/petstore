@@ -259,9 +259,20 @@ the terminal:
     wait      an interactive child; it uses this process's own streams, raw
     become    this process is replaced by the child; its output is raw
 
-`capture`, `wait` and `become` are as `docs/modules/proc.md` describes them
-today. `logged` and `quietly` are new and take the place of `through`, which is
-removed.
+`capture` and `become` are as `docs/modules/proc.md` describes them today.
+`logged` and `quietly` are new and take the place of `through`, which is
+removed. `wait` is as described there with one addition:
+
+    wait(cmd, *, stdin=None, timeout=None) -> int
+
+`timeout` is as `capture`'s: on expiry the child is killed and `TimeoutExpired`
+is raised. It lets dotfiles' `run_command` keep its one-hour bound when it
+moves to `wait` (below). `wait` starts its child through the call `proc`
+already makes for every start, so the timeout adds no second call site and no
+suppression. If the implementation finds it needs either, that comes back to J
+under rule 4 before it is written. The answer is clank
+`tasks/petstore/output/60-amend-the-spec-to-the-answers-and-the-re-read/wait-timeout-for-update.question.answered`,
+option 1: settled by alberta on J's standing guidance, not an answer given by J.
 
 ### Choices made here
 
@@ -371,8 +382,8 @@ for `through(` across the estate's repositories, are these:
   output stays raw, on this process's own streams. Its test,
   `tests/test_update.py:215-218`, passes real files and is rewritten with the
   move, and so is the wording of the requirement it covers there (FR-3.8 in
-  dotfiles). `wait` takes no `timeout` today and `run_command` passes
-  `UPDATE_TIMEOUT`, one hour; whether `wait` gains one is in "Open".
+  dotfiles). `run_command` passes `UPDATE_TIMEOUT`, one hour, to `wait`'s new
+  `timeout` and keeps its bound.
 - alberta's four launches (`desk.py:227`, `face.py:767`, `music.py:250`, and
   `tests/display/test_face_window.py:518`) pass an open `os.devnull` for both
   streams and want no output. Each runs its program under `setsid -f`. They move
@@ -404,8 +415,8 @@ then are:
 - `docs/modules/proc.md`: the Public API line (`:5`), the `import sys` that
   only the `through` example uses (`:22`), the import line (`:24`), the
   example (`:33`) and the paragraph on `through` (`:49-51`), the last replaced
-  by paragraphs on `logged` and `quietly`; and a sentence that `wait` and
-  `become` leave the child's output raw.
+  by paragraphs on `logged` and `quietly`; `wait`'s new `timeout`; and a
+  sentence that `wait` and `become` leave the child's output raw.
 - `README.md:204`, the sentence describing `through`, `wait` and `become`.
 - `SUPPRESSIONS/starting-another-program.md:9`, which lists the calls that go
   through the private runner. It loses `through` and gains `logged` and
@@ -540,11 +551,6 @@ for the template's owner to confirm when it moves. `bin/measure_memory.py` in
 
 ## Open
 
-- Whether `wait` takes a `timeout`. `run_command` in dotfiles runs `apt` under
-  one hour's bound today and moves to `wait`, which takes none, so without it
-  the move drops the bound. Asked in clank
-  `tasks/petstore/output/60-amend-the-spec-to-the-answers-and-the-re-read.questions/wait-timeout-for-update.question`.
-  Nothing else in this guide depends on the answer.
 - Where petstore's result writer sits, and the exemption for its lines. Both
   are that task's: the writer exists after this module, the exemption is a
   suppression asked once its lines exist, and silo's section "One writer writes
