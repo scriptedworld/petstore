@@ -555,14 +555,15 @@ module's lines exist.
 
 The result writer's exemption is not approved here. Silo's section leaves it to
 be asked once the writer's lines exist. Where the writer sits is that task's to
-say. Silo's section and the answer cover petstore's files for the logging and
-output code and say nothing of the writer's file. That the writer is covered
-only where it sits inside this module or is called through it is alberta's
-reading, not the answer's, and not J's. A writer in a file of its own, called
-through this module, is therefore not covered by anything written here: that
-file's exemption is the writer task's question. The direct writes in `tests/test_proc.py`
-and `proc.py` that clank's inbox entry `python-output-bypasses-logging` names are
-for the task that folds that entry in.
+say. Silo's section and the answer rule that the exemption covers petstore's
+files for the logging and output code. Both also record alberta's reading of
+the writer, that it is covered only where it sits inside this module or is
+called through it, and both say the reading is hers and not J's. It is not a
+ruling. A writer in a file of its own, called through this module, is covered
+only if that reading is confirmed, and whether it is confirmed is the writer
+task's question. The direct writes in `tests/test_proc.py` and `proc.py` that clank's inbox
+entry `python-output-bypasses-logging` names are for the task that folds that
+entry in.
 
 ## Moving a caller over
 
