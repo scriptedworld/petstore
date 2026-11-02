@@ -2,14 +2,16 @@
 
 Module: `petstore.output`
 
-Public API: `configure`, and the filter run as `python -m petstore.output`.
+Public API: `configure`, `flush`, and the filter run as
+`python -m petstore.output`.
 
 This guide is the module's spec. The module is not built yet; the
 requirements, tests and code are derived from this file. A line saying
 *Checked* cites a probe under `evidence/` in clank's
 `tasks/petstore/output/10-spec-the-output-module` task or its
-`tasks/petstore/output/40-amend-the-spec-to-the-review` task, which regenerate
-what they state when run from this tree's `.ephemera/felix-output/`.
+`tasks/petstore/output/40-amend-the-spec-to-the-review` or
+`tasks/petstore/output/60-amend-the-spec-to-the-answers-and-the-re-read` task,
+which regenerate what they state when run from this tree's `.ephemera/`.
 
 ## Purpose
 
@@ -35,14 +37,17 @@ through the filter below. Those rulings are the same file's section "Every
 entry is one JSON object", silo `4b60289`.
 
 This module is the one place in petstore, and in a program using it, that
-writes log entries to a standard stream, as `petstore.proc` is the one place
-that starts another program. `proc` also flushes stdout before a child starts
-(`proc.py:160`, `:166`); that is named in "Open".
+names a standard stream, as `petstore.proc` is the one place that starts
+another program. It writes the log entries, and it flushes the streams for
+`proc` before a child starts (see "With petstore.proc").
 
-How a result is written is not in this guide. Silo's standard records that
-how a result reaches stdout "is not ruled" (the same file's decisions table,
-`code-standard/10 how-results-reach-stdout`). The guide does not invent a form;
-"Open" says what waits on it.
+A result is written by a petstore result writer, not by this module. Silo's
+section "One writer writes the result" (silo `cae172f`) says
+it writes wrench's result envelope (`schemas/envelope.schema.json`, one JSON
+object carrying `success`) to stdout, or to the chosen output file, and that
+the writer is a task of its own. Its form is that file's; this guide adds
+nothing to it. That section was settled by alberta from guidance and is open to
+overruling.
 
 ## Usage
 
@@ -90,7 +95,7 @@ nothing is stripped.
 An entry is written as compact JSON with every non-ASCII character escaped,
 so what reaches the stream is ASCII. A message no encoding could carry, such as
 a path holding an undecodable byte, still writes, and parses back to the same
-string. Checked: `json.dumps` with `ensure_ascii` writes `"café \udcff"`
+string. Checked: `json.dumps` with `ensure_ascii` writes `"caf\u00e9 \udcff"`
 for the message `café` followed by a space and the lone surrogate `\udcff`, and
 `json.loads` returns the original unchanged (`evidence/probe_json.py`).
 
@@ -133,7 +138,8 @@ Raw text reaches a stream in these places, and no others the module controls:
 - The program's result, on stdout, which is not an entry.
 
 A reader of a program's log reads stderr. A reader of its result reads stdout,
-where raw text can still be a child's.
+where raw text can still be a child's, or the chosen output file, in which case
+stdout carries no result (SR-OUT.2).
 
 ## Which stream
 
@@ -159,12 +165,20 @@ a child started afterwards writes.
 A failed write raises from the logging call, as `print` does: a closed pipe
 raises `BrokenPipeError` at `log.info`. logging's default is to print
 `--- Logging error ---` with a traceback to stderr and carry on, which loses
-the line and leaves the exit status at 0. Checked, with the entries on stdout
+the line and does not stop the program. Checked, with the entries on stdout
 as the probe had them: 200000 records into `head -1` wrote about 3.2 million
 lines of those reports (3199971 and 3199987 in two runs) to stderr, where
 `print` raised on the first failed write (`evidence/run_probes.sh`). The
-handler is the same for stderr. A handler whose `handleError` raises propagates
-the error out of the logging call (`evidence/test_probe_capture.py`, test e).
+handler is the same for stderr, but the reports are not: they go to stderr,
+which is the closed stream, so there is no flood to see. A handler whose
+`handleError` raises propagates the error out of the logging call
+(`evidence/test_probe_capture.py`, test e).
+
+The program's exit status after a lost line is not the logging call's to set.
+In the shape the re-read tried, a reader that closed after one line and a
+writer of 20000 records, the default handler completed every call and the
+process exited 120, the interpreter failing to flush at shutdown; a program
+with nothing buffered at exit may differ.
 
 ## configure
 
@@ -206,9 +220,10 @@ sees its warnings through the last resort. Of petstore's modules only
 
 Every logger that propagates to the root reaches stderr, a dependency's
 included; a program quiets one by setting that logger's level. None of the
-interview template's dependencies logs at INFO today: copier's tree logs
-through plumbum at DEBUG only (`grep` for `logger.info` and `logger.warning`
-over plumbum and copier in the template's environment found none).
+interview template's dependencies logs at INFO today: a `grep` for
+`logger.info` and `logger.warning` over plumbum and copier in the template's
+environment found none. plumbum does log at ERROR, in `machines/session.py`,
+on a connect timeout, and that reaches stderr as an entry.
 
 ## The filter
 
@@ -219,7 +234,8 @@ person. Each entry is one block: the level and logger, then the message with its
 newlines as real line breaks, then the traceback when there is one. Everything
 the reader rule above calls raw text is passed through unchanged and in order,
 so a mixed stream is still readable. That includes a program's result, so the
-filter does not format a result; whether it should is in "Open".
+filter does not format a result, as silo's section "One writer writes the
+result" has it: results stay machine-readable.
 
 The filter never fails on what it is handed. A message holding a lone
 surrogate, and any raw byte that is not valid text, is written with the
@@ -264,7 +280,7 @@ answer:
   is kept, `logged` below is `through` with those two parameters dropped and
   nothing else in this guide changes.
 - **`quietly` is a third call**, beyond the log method and the capture method
-  the answer names. Review 20 found that the three alberta launches cannot move
+  the answer names. Review 20 found that the alberta launches cannot move
   to `capture` and that nothing else drops output without a pipe (below).
 
 ### logged
@@ -272,12 +288,22 @@ answer:
     logged(cmd, *, timeout=None) -> int
 
 Runs `cmd` to completion and returns its exit status. Its standard input is
-this process's, as `through`'s was. Each line the child writes is logged as
-one entry on the logger `petstore.proc` as the child produces it, not after it
-exits:
+this process's, as `through`'s was. It runs the child through the call `proc`
+already makes for every start (`capture` uses it), so it reads both of the
+child's pipes to the end and logs the child's lines after the child exits, not
+as it produces them. A long-running child shows nothing until it ends, and its
+output is held in memory until then, as `capture`'s is. Each line is logged as
+one entry on the logger `petstore.proc`:
 
     the child's stdout   INFO
     the child's stderr   WARNING
+
+This is the answer to the question of a second subprocess call site (clank
+`tasks/petstore/output/80-split-the-stages-to-a-release.blocked/popen-call-site-for-logged.question.answered`,
+option 2): no second call site and no new suppression. No silo decision file
+records it. It withdraws this guide's earlier promise that entries arrive while
+the child runs; a child that must be seen as it works is an interactive child
+and uses `wait`.
 
 Both reach stderr like every entry. The level keeps the child's two streams
 apart for a reader filtering by level. It says which stream the line came from,
@@ -291,14 +317,18 @@ same. A child whose stdout is the data a caller wants uses `capture`.
 - Bytes are decoded so that none is lost: an undecodable byte becomes the lone
   surrogate `surrogateescape` gives it, which the entry carries and parses back
   to the same string (the case `evidence/probe_json.py` checks).
-- Lines of one stream come in the order the child wrote them. Between the
-  child's stdout and its stderr no order is promised, as between threads.
+- The lines of the child's stdout are logged first, in the order the child
+  wrote them, then the lines of its stderr in theirs. How the two interleaved
+  in time is not kept; the level says which stream a line came from.
 - On `timeout` the child is killed and `TimeoutExpired` is raised, as `capture`
-  does. The lines read before then have been logged.
-- A write failure while the child runs is raised from `logged`, as "When a
-  write fails" says for any logging call, after the child has been killed and
-  waited for. Nobody is reading what it writes, and a child left running would
-  block on a pipe nobody drains. Its exit status is not returned.
+  does, after the lines the child had written are logged. Checked: with both
+  pipes captured, the exception carried `first` from stdout and `err` from
+  stderr for a child that wrote both and then slept past the timeout
+  (`evidence/probe_timeout.py` in the 60 task).
+- A write failure while the lines are logged is raised from `logged`, as "When
+  a write fails" says for any logging call. The child has already exited, so
+  nothing is left running. The lines not yet logged are lost and the exit
+  status is not returned.
 - It takes `timeout` and nothing else, as `through` did. `capture` takes `cwd`,
   `env` and `stdin` as well; no caller of `through` needs them, and adding them
   later does not break a caller.
@@ -307,16 +337,9 @@ same. A child whose stdout is the data a caller wants uses `capture`.
   "configure".
 - The child's streams are pipes, not a terminal. A child that buffers when
   piped, or changes its output when it is not a terminal, does so here; a child
-  that prompts or paints a screen is an interactive child and uses `wait`.
-
-Streaming both pipes while the child runs needs a call `proc.py`'s one
-approved start (`subprocess.run`) does not make. Whether `proc.py` may add a
-second call site, with its own bandit and ruff suppressions, is a rule 4
-question, asked and unanswered, in clank `tasks/petstore/output/60-split-the-stages-to-a-release.questions/`.
-This guide does not decide it. If the answer is that `logged` reads both pipes
-and writes the entries after the child exits, "as the child produces it"
-changes to match, and the rest stands. If `logged` is left out of the release,
-this section waits and `through` stays.
+  that prompts or paints a screen is an interactive child and uses `wait`. A
+  prompt a child writes without a newline is logged with the rest, after the
+  child exits, so a prompt is never seen while it can be answered.
 
 ### quietly
 
@@ -339,26 +362,35 @@ captured and wrote to them when they had no descriptor. Its callers, by `grep`
 for `through(` across the estate's repositories, are these:
 
 - dotfiles' `run_command` (`update.py:53`) passes its own `stdout` and `stderr`
-  and wants a person to see the output as it comes. It moves to `logged`. Its
+  (`update.py:179` hands it `sys.stdout` and `sys.stderr`) and wants a person to
+  see the output as it comes. It moves to `wait`, not `logged`. It runs `apt`
+  under `sudo` with no `-y`, and `update.py:105` and `:175` say `sudo` asks for
+  the password on the terminal and apt asks there: an interactive child, by the
+  rule above, and `logged` would show its prompt only after the child exits. Its
   streams, and the fallback it carries for a stream with no descriptor, go. The
-  output becomes entries on stderr, so a reader of that output reads entries.
-  Its test, `tests/test_update.py:215-218`, passes real files and is rewritten
-  with the move, and so is the wording of the requirement it covers there
-  (FR-3.8 in dotfiles).
-- alberta's three launches (`desk.py:227`, `face.py:767`, `music.py:250`) pass
-  an open `os.devnull` for both streams and want no output. Each runs its
-  program under `setsid -f`. They move to `quietly`, not `capture`: handed a
-  pipe, the detached program holds it open and `capture` waits for it, which
-  is the 2.00s above. `music.py:250` reads the status and does not ignore it;
-  `quietly` returns it.
+  output stays raw, on this process's own streams. Its test,
+  `tests/test_update.py:215-218`, passes real files and is rewritten with the
+  move, and so is the wording of the requirement it covers there (FR-3.8 in
+  dotfiles). `wait` takes no `timeout` today and `run_command` passes
+  `UPDATE_TIMEOUT`, one hour; whether `wait` gains one is in "Open".
+- alberta's four launches (`desk.py:227`, `face.py:767`, `music.py:250`, and
+  `tests/display/test_face_window.py:518`) pass an open `os.devnull` for both
+  streams and want no output. Each runs its program under `setsid -f`. They move
+  to `quietly`, not `capture`: handed a pipe, the detached program holds it open
+  and `capture` waits for it, which is the 2.00s above. `music.py:250` reads the
+  status and does not ignore it; `quietly` returns it. The comment at
+  `test_face_window.py:516`, that kitty would hold a captured pipe open, says the
+  same.
 - petstore's own `tests/test_proc.py:52-60` passes real files, and is the test
-  of `FR-6.3` that moves with the row (below).
+  of `FR-6.3` that moves with the row (below). Its second test, `:68`, passes
+  `StringIO` for the fallback branch and moves with the row too.
 
-No production code passes real files for a child to write into, and the first
-branch of `through`, the child writing straight into a given descriptor, has no
-replacement: for a batch child, output that bypasses logging is what the ruling
-removes. A caller that wants a child's output in a file uses `capture` and
-writes the file, which holds the output in memory first.
+After these moves no production code hands a child a stream of its choosing. The
+first branch of `through`, the child writing straight into a given descriptor,
+had one production caller, `run_command`, and `wait` replaces it for a process's
+own streams. For a batch child there is no replacement: output that bypasses
+logging is what the ruling removes. A caller that wants a child's output in a
+file uses `capture` and writes the file, which holds the output in memory first.
 
 Removing a name breaks its callers, so the release that carries it carries
 their move.
@@ -376,21 +408,37 @@ then are:
   `become` leave the child's output raw.
 - `README.md:204`, the sentence describing `through`, `wait` and `become`.
 - `SUPPRESSIONS/starting-another-program.md:9`, which lists the calls that go
-  through the private runner. It loses `through`, gains `quietly`, and gains
-  `logged` only if the Popen question above is answered that way.
+  through the private runner. It loses `through` and gains `logged` and
+  `quietly`, both of which start their child through that runner. No new line
+  is added to that file.
 
 `FR-6.3`, the row for `through`, is superseded by rows for `logged` and
 `quietly`, and its two `COVERS` marks in `tests/test_proc.py` (lines 51 and 63)
 move with them. `FR-6.1`, `FR-6.4` and `FR-6.5` are unchanged. The supersession
-is done in `60`'s split, with the rows for this module.
+is done in the `80` task's split, with the rows for this module.
 
-The flush `wait` and `become` do before the child starts stays. Entries are
-already flushed when written, so it changes nothing for them; it is for
-anything else holding buffered output. `logged` and `quietly` need none: a
-child's output reaches a stream only as entries, written after the entries
-before it, or not at all.
+### flush
 
-## The ban, in an adopter
+    flush() -> None
+
+Flushes `sys.stdout` and `sys.stderr`, writes nothing, and needs no `configure`.
+`wait` and `become` call it before the child starts, where `proc.py` flushed
+stdout itself (`proc.py:160`, `:166`). It exists so that `proc.py` names no
+stream: `proc.py` is not exempt from the ban in petstore's own tree (see "In
+petstore's own tree"), and this module is. `proc` imports `petstore.output` for it;
+this module imports nothing from `proc`. `proc.py`'s `import sys` goes with the
+two lines.
+
+The flush stays for the reason it had: `print()` is block-buffered when piped,
+while the child writes straight to the descriptor, so without it the child's
+output arrives before text that came earlier. Entries are already flushed when
+written, so it changes nothing for them; it is for a result, or anything else
+holding buffered output. `logged` and `quietly` need none: a child's output
+reaches a stream only as entries, written after the entries before it, or not
+at all. Flushing stderr as well as stdout is new and changes nothing a caller
+can see, since entries are flushed when written.
+
+## The ban, in an adopter, and in petstore
 
 An adopter refuses the direct writes with ruff:
 
@@ -417,12 +465,31 @@ refused wherever it is tried. A program that gives a child its own streams uses
 `wait`, which names none.
 
 The same ban refuses a program writing its result to stdout, which the standard
-requires (SR-OUT.2) and the decision does not call a log entry. Until how a
-result is written is ruled, an adopter has no path the ban admits for it. This
-guide leaves that open (below) and does not add an exemption for it.
+requires (SR-OUT.2) and the decision does not call a log entry. The path the
+ban admits for it is petstore's result writer, which does not exist yet (see
+"Writing a result" under "Left out"). This guide adds no exemption for it.
 
 petstore needs no exemption in an adopter: ruff lints the adopter's tree, and
 petstore's code is in the installed package, not in it.
+
+### In petstore's own tree
+
+petstore bans the same names in its own source. The `TID251` exemption covers
+petstore's files for the logging and output code, which is this module, and
+nothing else. `proc.py` is not exempt: its two flushes move into this module
+(`flush`, above). The answers are clank
+`tasks/petstore/output/80-split-the-stages-to-a-release.blocked/tid251-exemption-in-petstore.question.answered`
+and `which-files-the-tid251-exemption-covers.question.answered`; silo's section
+"One writer writes the result" records the same ruling. The exemption is a
+suppression and is registered in `SUPPRESSIONS/` with those answers when the
+module's lines exist.
+
+The result writer's exemption is not approved here. Silo's section leaves it to
+be asked once the writer's lines exist. Where the writer sits is that task's to
+say; that it sits inside this module or is called through it is alberta's
+reading of the answer, not the answer's. The direct writes in `tests/test_proc.py`
+and `proc.py` that clank's inbox entry `python-output-bypasses-logging` names are
+for the task that folds that entry in.
 
 ## Moving a caller over
 
@@ -442,9 +509,9 @@ whoever reads the refusal on stderr, who now reads an entry.
 These write the command's product to stdout, so they are results: the
 interview root's `just open` reads `new.py uri` from this stream and the
 template's tests compare `drift`, `list` and `exercise` output exactly. They do
-not move to logging. They stay as they are until how a result is written is
-ruled, because the ban above refuses them and the standard names no form to
-move them to. Whether `doctor`'s table is a result or a report for a person is
+not move to logging. They stay as they are until petstore's result writer
+lands, because the ban above refuses them and nothing yet admits a result; they
+then move to it. Whether `doctor`'s table is a result or a report for a person is
 for the template's owner to confirm when it moves. `bin/measure_memory.py` in
 `rate-limiter` was not opened.
 
@@ -466,25 +533,23 @@ for the template's owner to confirm when it moves. `bin/measure_memory.py` in
 - **Output written by other code.** argparse's usage and errors, an uncaught
   exception's traceback and a library's direct writes reach the streams as
   that code writes them.
-- **Writing a result.** No function here writes a result, and the guide names
-  no form for one.
+- **Writing a result.** No function here writes a result. Silo's section "One
+  writer writes the result" (`cae172f`) puts that in petstore's result writer,
+  a task of its own that petstore's release does not wait on, and the log
+  filter leaves results alone.
 
 ## Open
 
-- How a program's result is written to stdout, or to a chosen output file, and
-  so what the ban in an adopter admits for it. Silo's standard rules where a
-  result goes (SR-OUT.2) and that its format is the estate's output format
-  held as a schema in wrench (SR-OUT.7), and records that how it reaches
-  stdout "is not ruled". It decides what the template's result sites move to,
-  whether the filter formats a result or only passes it through, and whether
-  this module or another exposes the writer. It is silo's to rule; nothing else
-  in this guide depends on the answer.
-- Whether `proc.py` may add a second subprocess call site for `logged`, with
-  its own suppressions. Asked in the 60 task. See "logged".
-- Whether petstore bans the direct writes in its own tree. Doing so needs a
-  `TID251` exemption for this module and `proc.py`, which is a suppression
-  under the estate's rule 4 and is asked before it is written. Also asked in
-  the 60 task. Nothing in this spec depends on it.
+- Whether `wait` takes a `timeout`. `run_command` in dotfiles runs `apt` under
+  one hour's bound today and moves to `wait`, which takes none, so without it
+  the move drops the bound. Asked in clank
+  `tasks/petstore/output/60-amend-the-spec-to-the-answers-and-the-re-read.questions/wait-timeout-for-update.question`.
+  Nothing else in this guide depends on the answer.
+- Where petstore's result writer sits, and the exemption for its lines. Both
+  are that task's: the writer exists after this module, the exemption is a
+  suppression asked once its lines exist, and silo's section "One writer writes
+  the result" is silent on which module exposes it. Nothing in this guide
+  depends on the answer.
 
 ## Requirements
 
