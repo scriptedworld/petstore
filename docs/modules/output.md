@@ -7,11 +7,19 @@ Public API: `configure`, `flush`, and the filter run as
 
 This guide is the module's spec. The module is not built yet; the
 requirements, tests and code are derived from this file. A line saying
-*Checked* cites a probe under `evidence/` in clank's
-`tasks/petstore/output/10-spec-the-output-module` task or its
-`tasks/petstore/output/40-amend-the-spec-to-the-review` or
-`tasks/petstore/output/60-amend-the-spec-to-the-answers-and-the-re-read` task,
-which regenerate what they state when run from this tree's `.ephemera/`.
+*Checked* cites a probe under `evidence/` in one of the tasks of clank's
+`petstore/output` group named `spec-the-output-module`,
+`amend-the-spec-to-the-review` or
+`amend-the-spec-to-the-answers-and-the-re-read`, or the one named
+`amend-the-spec-to-the-re-read-of-the-second-amendment`. The probes
+regenerate what they state when run from this tree's `.ephemera/`.
+
+A clank task is cited here by its name and its group, never by its number or
+state, because both change as the group moves: the directory is the one under
+`tasks/petstore/output/` whose name, less the leading number and the trailing
+state, is that name. An answered question is cited by its file's name, which
+stays, and is found with `find` over clank's `tasks/petstore/` for
+`<name>.question.answered`.
 
 ## Purpose
 
@@ -36,10 +44,13 @@ so whatever reads a program's log can always parse it, and a person reads it
 through the filter below. Those rulings are the same file's section "Every
 entry is one JSON object", silo `4b60289`.
 
-This module is the one place in petstore, and in a program using it, that
-names a standard stream, as `petstore.proc` is the one place that starts
-another program. It writes the log entries, and it flushes the streams for
-`proc` before a child starts (see "With petstore.proc").
+This module writes the log entries, and it flushes the streams for `proc`
+before a child starts (see "With petstore.proc"). It is the only place that
+writes a log entry, and `petstore.proc` is the only place that starts another
+program. Whether it is the only place in petstore that names a standard stream
+depends on where petstore's result writer sits, which is open (see "Open"):
+the writer names stdout or the chosen file, so if it sits in another module
+that module names a stream too. In either case `proc` names none.
 
 A result is written by a petstore result writer, not by this module. Silo's
 section "One writer writes the result" (silo `cae172f`) says
@@ -155,7 +166,7 @@ handler holding the stream it was built with lost a later test's line and wrote
 (`evidence/test_probe_capture.py`, tests b and d). Checked for stderr without
 pytest: a handler built holding `sys.stderr` wrote to the old stream after it
 was replaced, and one that looks it up wrote to the replacement
-(`evidence/probe_stderr_lookup.py` in the 40 task).
+(`evidence/probe_stderr_lookup.py` in the task `amend-the-spec-to-the-review`).
 
 Each entry is flushed when it is written, so it reaches stderr before anything
 a child started afterwards writes.
@@ -270,14 +281,14 @@ is raised. It lets dotfiles' `run_command` keep its one-hour bound when it
 moves to `wait` (below). `wait` starts its child through the call `proc`
 already makes for every start, so the timeout adds no second call site and no
 suppression. If the implementation finds it needs either, that comes back to J
-under rule 4 before it is written. The answer is clank
-`tasks/petstore/output/60-amend-the-spec-to-the-answers-and-the-re-read/wait-timeout-for-update.question.answered`,
-option 1: settled by alberta on J's standing guidance, not an answer given by J.
+under rule 4 before it is written. The answer is clank's
+`wait-timeout-for-update.question.answered`, in the task
+`amend-the-spec-to-the-answers-and-the-re-read`, option 1: settled by alberta on J's standing guidance, not an answer given by J.
 
 ### Choices made here
 
-The answer to the child-output question (clank
-`tasks/petstore/output/10-spec-the-output-module.complete/child-output.question.answered`)
+The answer to the child-output question (clank's
+`child-output.question.answered`, in the task `spec-the-output-module`)
 chose the option "Split by kind of child" and added that capturing and logging
 are two separate things, so `proc` gives a log method and a capture method. The
 option's text kept the name: `through` becomes the batch call. Two things here
@@ -291,7 +302,7 @@ answer:
   is kept, `logged` below is `through` with those two parameters dropped and
   nothing else in this guide changes.
 - **`quietly` is a third call**, beyond the log method and the capture method
-  the answer names. Review 20 found that the alberta launches cannot move
+  the answer names. The review in the task `review-the-output-spec` found that the alberta launches cannot move
   to `capture` and that nothing else drops output without a pipe (below).
 
 ### logged
@@ -300,7 +311,22 @@ answer:
 
 Runs `cmd` to completion and returns its exit status. Its standard input is
 this process's, as `through`'s was. It runs the child through the call `proc`
-already makes for every start (`capture` uses it), so it reads both of the
+already makes for every start (`capture` uses it), with one change to the
+runner that wraps that call, `_run` in `proc.py`: today it runs the child in
+text mode unless `stdin` is bytes, and bytes `stdin` gives the child an empty,
+closed stdin. `logged` needs the child's output as bytes and the child's stdin
+left alone, which `_run` cannot give, so it takes a parameter that asks for
+bytes output without touching stdin. Checked: through `_run` as it is, a child
+writing `x\xffy` raised `UnicodeDecodeError` from `capture`, and
+`capture(..., stdin=b"")`, the only route to bytes, left the child reading
+`b''`. Text mode would not serve with an error handler either: with
+`errors="surrogateescape"` text mode translated a child's `a\rb\r\n` to
+`a\nb\n`, and the rules below keep a lone `\r` and remove a `\r\n` whole
+(`evidence/probe_run.py` in the task
+`amend-the-spec-to-the-re-read-of-the-second-amendment`). The parameter is on the same call,
+with the same two pragma lines, so it is inside the answer below: no second
+call site and no new suppression. If the implementation finds it needs either,
+that comes back to J under rule 4 before it is written. `logged` reads both of the
 child's pipes to the end and logs the child's lines after the child exits, not
 as it produces them. A long-running child shows nothing until it ends, and its
 output is held in memory until then, as `capture`'s is. Each line is logged as
@@ -309,9 +335,10 @@ one entry on the logger `petstore.proc`:
     the child's stdout   INFO
     the child's stderr   WARNING
 
-This is the answer to the question of a second subprocess call site (clank
-`tasks/petstore/output/80-split-the-stages-to-a-release.blocked/popen-call-site-for-logged.question.answered`,
-option 2): no second call site and no new suppression. No silo decision file
+This is the answer to the question of a second subprocess call site (clank's
+`popen-call-site-for-logged.question.answered`, in the task
+`split-the-stages-to-a-release`, option 2): no second call site and no new
+suppression. No silo decision file
 records it. It withdraws this guide's earlier promise that entries arrive while
 the child runs; a child that must be seen as it works is an interactive child
 and uses `wait`.
@@ -335,7 +362,11 @@ same. A child whose stdout is the data a caller wants uses `capture`.
   does, after the lines the child had written are logged. Checked: with both
   pipes captured, the exception carried `first` from stdout and `err` from
   stderr for a child that wrote both and then slept past the timeout
-  (`evidence/probe_timeout.py` in the 60 task).
+  (`evidence/probe_timeout.py` in the task
+  `amend-the-spec-to-the-answers-and-the-re-read`). The exception's partial
+  output is bytes whether the run was in text mode or not (`probe_run.py`,
+  cases Q4 and Q5), so `logged` decodes those bytes and splits them into
+  lines by the same rules as above before it logs them.
 - A write failure while the lines are logged is raised from `logged`, as "When
   a write fails" says for any logging call. The child has already exited, so
   nothing is left running. The lines not yet logged are lost and the exit
@@ -362,7 +393,7 @@ and returns its exit status. Its standard input is this process's, as
 Nothing is read from the child, so a program that detaches and outlives the
 call does not hold the call open. Checked: `setsid -f sleep 2` returned in
 0.00s with its output on the null device and in 2.00s on a pipe
-(`evidence/probe_quietly.py` in the 40 task; the review measured 0.00s and 4.00s
+(`evidence/probe_quietly.py` in the task `amend-the-spec-to-the-review`; the review measured 0.00s and 4.00s
 with a 4-second child). It starts the program through the runner that
 `capture` uses, so it needs no new suppression.
 
@@ -398,8 +429,16 @@ for `through(` across the estate's repositories, are these:
 
 After these moves no production code hands a child a stream of its choosing. The
 first branch of `through`, the child writing straight into a given descriptor,
-had one production caller, `run_command`, and `wait` replaces it for a process's
-own streams. For a batch child there is no replacement: output that bypasses
+is taken for any pair of streams that both have a descriptor (`proc.py:144`).
+It had four production callers: alberta's three launches (`desk.py:227`,
+`face.py:767`, `music.py:250`), each handing it an open `os.devnull`, and
+dotfiles' `run_command`, when `update` is given real streams, as `main` gives
+it `sys.stdout` and `sys.stderr`. The fifth caller, alberta's
+`test_face_window.py:518`, is a test. A `grep` for
+`proc.through` over alberta, dotfiles, petstore, `~/interview` and `~/.hobby`
+finds these four in production and no other (`.ephemera/hazel-output-70/refs.sh`
+is the shape). The three launches move to `quietly` and `run_command` to
+`wait`, which replaces it for a process's own streams. For a batch child there is no replacement: output that bypasses
 logging is what the ruling removes. A caller that wants a child's output in a
 file uses `capture` and writes the file, which holds the output in memory first.
 
@@ -417,6 +456,12 @@ then are:
   example (`:33`) and the paragraph on `through` (`:49-51`), the last replaced
   by paragraphs on `logged` and `quietly`; `wait`'s new `timeout`; and a
   sentence that `wait` and `become` leave the child's output raw.
+- `src/petstore/proc.py`: the runner `_run` takes the parameter `logged` needs
+  (see "logged"), and the docstring that says bytes `stdin` is the only route
+  to bytes output changes with it. The parameter adds no pragma line, and
+  `SUPPRESSIONS/starting-another-program.md` lists its five pragma lines by
+  file and rule id, with no line numbers, so the register's entries do not
+  change for it.
 - `README.md:204`, the sentence describing `through`, `wait` and `become`.
 - `SUPPRESSIONS/starting-another-program.md:9`, which lists the calls that go
   through the private runner. It loses `through` and gains `logged` and
@@ -426,7 +471,7 @@ then are:
 `FR-6.3`, the row for `through`, is superseded by rows for `logged` and
 `quietly`, and its two `COVERS` marks in `tests/test_proc.py` (lines 51 and 63)
 move with them. `FR-6.1`, `FR-6.4` and `FR-6.5` are unchanged. The supersession
-is done in the `80` task's split, with the rows for this module.
+is done in the task `split-the-stages-to-a-release`, with the rows for this module.
 
 ### flush
 
@@ -486,11 +531,13 @@ petstore's code is in the installed package, not in it.
 ### In petstore's own tree
 
 petstore bans the same names in its own source. The `TID251` exemption covers
-petstore's files for the logging and output code, which is this module, and
-nothing else. `proc.py` is not exempt: its two flushes move into this module
-(`flush`, above). The answers are clank
-`tasks/petstore/output/80-split-the-stages-to-a-release.blocked/tid251-exemption-in-petstore.question.answered`
-and `which-files-the-tid251-exemption-covers.question.answered`; silo's section
+petstore's files for the logging and output code: this module, and the result
+writer's lines if they sit in or are called through it, which is open (see
+"Open"). It covers no other file. `proc.py` is not exempt: its two flushes move
+into this module (`flush`, above). The answers are clank's
+`tid251-exemption-in-petstore.question.answered` and
+`which-files-the-tid251-exemption-covers.question.answered`, both in the task
+`split-the-stages-to-a-release`; silo's section
 "One writer writes the result" records the same ruling. The exemption is a
 suppression and is registered in `SUPPRESSIONS/` with those answers when the
 module's lines exist.
@@ -554,8 +601,10 @@ for the template's owner to confirm when it moves. `bin/measure_memory.py` in
 - Where petstore's result writer sits, and the exemption for its lines. Both
   are that task's: the writer exists after this module, the exemption is a
   suppression asked once its lines exist, and silo's section "One writer writes
-  the result" is silent on which module exposes it. Nothing in this guide
-  depends on the answer.
+  the result" is silent on which module exposes it. The two places in this guide
+  that turn on the answer, who names a standard stream ("Purpose") and which
+  files the `TID251` exemption covers ("In petstore's own tree"), say what
+  holds either way.
 
 ## Requirements
 
