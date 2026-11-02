@@ -10,8 +10,9 @@ requirements, tests and code are derived from this file. A line saying
 *Checked* cites a probe under `evidence/` in one of the tasks of clank's
 `petstore/output` group named `spec-the-output-module`,
 `amend-the-spec-to-the-review` or
-`amend-the-spec-to-the-answers-and-the-re-read`, or the one named
-`amend-the-spec-to-the-re-read-of-the-second-amendment`. The probes
+`amend-the-spec-to-the-answers-and-the-re-read`,
+`amend-the-spec-to-the-re-read-of-the-second-amendment` or
+`amend-the-spec-to-the-re-read-of-the-third-amendment`. The probes
 regenerate what they state when run from this tree's `.ephemera/`.
 
 A clank task is cited here by its name and its group, never by its number or
@@ -318,13 +319,15 @@ closed stdin. `logged` needs the child's output as bytes and the child's stdin
 left alone, which `_run` cannot give, so it takes a parameter that asks for
 bytes output without touching stdin. Checked: through `_run` as it is, a child
 writing `x\xffy` raised `UnicodeDecodeError` from `capture`, and
-`capture(..., stdin=b"")`, the only route to bytes, left the child reading
-`b''`. Text mode would not serve with an error handler either: with
+`capture(..., stdin=b"")`, the only route to bytes, left the child with an
+empty stdin, which it read as nothing (`evidence/probe_capture_bytes.py` in the
+task `amend-the-spec-to-the-re-read-of-the-third-amendment`). Text mode would
+not serve with an error handler either: with
 `errors="surrogateescape"` text mode translated a child's `a\rb\r\n` to
 `a\nb\n`, and the rules below keep a lone `\r` and remove a `\r\n` whole
 (`evidence/probe_run.py` in the task
-`amend-the-spec-to-the-re-read-of-the-second-amendment`). The parameter is on the same call,
-with the same two pragma lines, so it is inside the answer below: no second
+`amend-the-spec-to-the-re-read-of-the-second-amendment`). The parameter is on
+the same call, with the same two pragma lines, so it is inside the answer below: no second
 call site and no new suppression. If the implementation finds it needs either,
 that comes back to J under rule 4 before it is written. `logged` reads both of the
 child's pipes to the end and logs the child's lines after the child exits, not
@@ -434,12 +437,20 @@ It had four production callers: alberta's three launches (`desk.py:227`,
 `face.py:767`, `music.py:250`), each handing it an open `os.devnull`, and
 dotfiles' `run_command`, when `update` is given real streams, as `main` gives
 it `sys.stdout` and `sys.stderr`. The fifth caller, alberta's
-`test_face_window.py:518`, is a test. A `grep` for
-`proc.through` over alberta, dotfiles, petstore, `[home]/interview` and `[home]/.hobby`
-finds these four in production and no other (`.ephemera/hazel-output-70/refs.sh`
-is the shape). The three launches move to `quietly` and `run_command` to
-`wait`, which replaces it for a process's own streams. For a batch child there is no replacement: output that bypasses
-logging is what the ruling removes. A caller that wants a child's output in a
+`test_face_window.py:518`, is a test. The search is
+
+    grep -rn -F 'proc.through' --include='*.py' --exclude-dir=.venv \
+        --exclude-dir=.git --exclude-dir=.ephemera --exclude-dir=node_modules \
+        <tree>...
+
+over the checkouts of alberta, dotfiles and petstore, and the `interview` and
+`.hobby` directories under the home directory of the machine it was run on. It
+finds the four production callers and the one test, and no other
+`proc.through`. petstore's own tests call `through` by its bare name
+(`tests/test_proc.py:56,68`), which this pattern does not match. The three
+launches move to `quietly` and `run_command` to `wait`, which replaces it for a
+process's own streams. For a batch child there is no replacement: output that
+bypasses logging is what the ruling removes. A caller that wants a child's output in a
 file uses `capture` and writes the file, which holds the output in memory first.
 
 Removing a name breaks its callers, so the release that carries it carries
@@ -531,10 +542,10 @@ petstore's code is in the installed package, not in it.
 ### In petstore's own tree
 
 petstore bans the same names in its own source. The `TID251` exemption covers
-petstore's files for the logging and output code: this module, and the result
-writer's lines if they sit in or are called through it, which is open (see
-"Open"). It covers no other file. `proc.py` is not exempt: its two flushes move
-into this module (`flush`, above). The answers are clank's
+petstore's files for the logging and output code, which this module is. `proc.py`
+is not exempt: its two flushes move into this module (`flush`, above). Whether
+the result writer's file is one of those files is open (see "Open"). The
+answers are clank's
 `tid251-exemption-in-petstore.question.answered` and
 `which-files-the-tid251-exemption-covers.question.answered`, both in the task
 `split-the-stages-to-a-release`; silo's section
@@ -544,8 +555,12 @@ module's lines exist.
 
 The result writer's exemption is not approved here. Silo's section leaves it to
 be asked once the writer's lines exist. Where the writer sits is that task's to
-say; that it sits inside this module or is called through it is alberta's
-reading of the answer, not the answer's. The direct writes in `tests/test_proc.py`
+say. Silo's section and the answer cover petstore's files for the logging and
+output code and say nothing of the writer's file. That the writer is covered
+only where it sits inside this module or is called through it is alberta's
+reading, not the answer's, and not J's. A writer in a file of its own, called
+through this module, is therefore not covered by anything written here: that
+file's exemption is the writer task's question. The direct writes in `tests/test_proc.py`
 and `proc.py` that clank's inbox entry `python-output-bypasses-logging` names are
 for the task that folds that entry in.
 
