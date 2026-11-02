@@ -75,6 +75,13 @@ splits on newlines, and the module promises nothing about where newlines fall
 between or inside entries. Today each entry is followed by one newline; that
 is a convenience to a person looking at raw output, not part of the contract.
 
+There are two places a stream carries something that is not an entry: the
+output of a child started by `petstore.proc.wait`, and of a program that
+replaced this one through `become`. Both hand the child the real descriptors,
+so what it writes arrives raw, between entries. A program that uses neither
+writes only entries; a reader of one that does skips what does not parse, as
+the filter does. See "With petstore.proc".
+
 ## Which stream
 
     INFO up to, not including, WARNING    stdout
@@ -130,8 +137,8 @@ it logs.
 An entry point calls `configure`. A library, petstore's own modules among
 them, never does: it takes `logging.getLogger(__name__)` and adds no handler,
 not even a `NullHandler`, so that a program which forgets `configure` still
-sees its warnings through the last resort. petstore's modules log nothing
-today.
+sees its warnings through the last resort. Of petstore's modules only
+`proc.logged` logs, under the logger name `petstore.proc`.
 
 Every logger that propagates to the root reaches the streams, a dependency's
 included. A dependency logging at INFO lands on stdout among the results; a
@@ -155,14 +162,90 @@ The filter's text is for reading. A program never reads it.
 
 ## With petstore.proc
 
-`wait` and `become` flush stdout before the child starts. Entries are already
-flushed when written, so the flush changes nothing for them; it stays for
-anything else holding buffered output, and `proc` is unchanged.
+What happens to a child's output depends on the kind of child. Capturing
+output and logging it are separate things, so `proc` has a call for each, and
+two more for children that need the terminal:
 
-A child started by `through`, `wait` or `become` writes its own output
-straight to the descriptor, not as entries, so a stream carrying it is no
-longer only objects. Whether that output is logged as entries or kept raw is
-open, below.
+    capture   a batch child; its output is returned and written nowhere
+    logged    a batch child; its output is logged as entries
+    wait      an interactive child; it uses this process's own streams, raw
+    become    this process is replaced by the child; its output is raw
+
+`capture`, `wait` and `become` are as `docs/modules/proc.md` describes them
+today. `logged` is new and takes the place of `through`, which is removed.
+
+### logged
+
+    logged(cmd, *, timeout=None) -> int
+
+Runs `cmd` to completion and returns its exit status. Its standard input is
+this process's, as `through`'s was. Each line the child writes is logged as
+one entry on the logger `petstore.proc` as the child produces it, not after it
+exits:
+
+    the child's stdout   INFO      so it reaches stdout, among the results
+    the child's stderr   WARNING   so it reaches stderr
+
+The level is what routes the line, per "Which stream". It says where the line
+goes, not that the child failed; a child that reports progress on stderr, as
+`git fetch` does, is logged at WARNING all the same.
+
+- The message is the line without its terminating newline. A last line with no
+  newline is logged too. A carriage return inside a line stays in the message.
+- Bytes are decoded so that none is lost: an undecodable byte becomes the lone
+  surrogate `surrogateescape` gives it, which the entry carries and parses back
+  to the same string (the case `evidence/probe_json.py` checks).
+- Lines of one stream come in the order the child wrote them. Between the
+  child's stdout and its stderr no order is promised, as between threads.
+- On `timeout` the child is killed and `TimeoutExpired` is raised, as `capture`
+  does. The lines read before then have been logged.
+- It needs `configure` to have been called. Without it the child's stdout is
+  not written at all and its stderr reaches stderr as bare text, per
+  "configure".
+- The child's streams are pipes, not a terminal. A child that buffers when
+  piped, or changes its output when it is not a terminal, does so here; a child
+  that prompts or paints a screen is an interactive child and uses `wait`.
+
+### What changes for a caller of `through`
+
+`through(cmd, stdout, stderr)` handed the child the streams it was given, or
+captured and wrote to them when they had no descriptor. It has three kinds of
+caller, and each moves to the call that fits:
+
+- A caller passing its own streams, such as dotfiles' `run_command` passing
+  `stdout` and `stderr`, wants a person to see the output as it comes. It moves
+  to `logged`. Its streams, and the fallback it carries for a `StringIO`, go.
+  The output becomes entries, so its readers parse entries; the filter shows
+  them.
+- A caller passing a discard, such as alberta's three launches passing an open
+  `os.devnull` for both, wants no output. `logged` would put the output in the
+  program's own, so it moves to `capture` and ignores the result.
+- A caller passing real files for the child to write into has none in the
+  estate today. It moves to `capture` and writes the file itself, which holds
+  the output in memory first.
+
+The first branch of `through`, the child writing straight into a given
+descriptor, has no replacement: for a batch child, output that bypasses logging
+is what the ruling removes. Removing a name breaks its
+callers, so the release that carries it carries their move.
+
+### proc.md and the rows
+
+`docs/modules/proc.md` describes code that exists, so it changes when the code
+does and not before. It then needs three changes: `logged` in place of
+`through` in the Public API line and the Usage example, the paragraph on
+`through` replaced by one on `logged`, and a sentence that `wait` and `become`
+leave the child's output raw.
+
+`FR-6.3`, the row for `through`, is superseded by rows for `logged`, and its
+two `COVERS` marks in `tests/test_proc.py` move with them. `FR-6.1`, `FR-6.4`
+and `FR-6.5` are unchanged. The supersession is done in `30`'s split, with the
+rows for this module.
+
+The flush `wait` and `become` do before the child starts stays. Entries are
+already flushed when written, so it changes nothing for them; it is for
+anything else holding buffered output. `logged` needs none: the child's output
+reaches the streams only as entries, written after the entries before it.
 
 ## The ban, in an adopter
 
@@ -186,9 +269,9 @@ and `from sys import stdout` at the import. It does not refuse
 `os.write(1, ...)`; banning `os.write` would refuse every descriptor write, so
 that one is left to review.
 
-The ban refuses naming the streams at all, so `through(cmd, sys.stdout,
-sys.stderr)` is refused too. A program that gives a child its own streams uses
-`wait`.
+The ban refuses naming the streams at all, so handing a child `sys.stdout` is
+refused wherever it is tried. A program that gives a child its own streams uses
+`wait`, which names none.
 
 petstore needs no exemption in an adopter: ruff lints the adopter's tree, and
 petstore's code is in the installed package, not in it.
@@ -215,17 +298,17 @@ That is a rewrite of those readers, not a move.
   but it does not make an embedded newline readable, which the filter does.
 - **Extra members from `extra=`.** The entry has the members above and no
   others. Structured fields are a later change to this contract.
-- **Child output, signals and threads.** SIGPIPE handling, output from other
-  processes and ordering between threads are as logging and the operating
-  system leave them.
+- **Signals and threads.** SIGPIPE handling and ordering between threads are
+  as logging and the operating system leave them.
+- **Logging a child that needs the terminal.** `wait` and `become` stay raw: a
+  child cannot be given a terminal and have its output logged, and `become`
+  has no process left to log it.
 - **Output written by other code.** argparse's usage and errors, an uncaught
   exception's traceback and a library's direct writes reach the streams as
   that code writes them.
 
 ## Open
 
-- Whether a child's output started through `petstore.proc` is logged as
-  entries or kept raw. Asked in the task that wrote this spec.
 - Whether petstore bans the direct writes in its own tree. Doing so needs a
   `TID251` exemption for this module and `proc.py`, which is a suppression
   under the estate's rule 4 and is asked before it is written. Nothing in this spec
