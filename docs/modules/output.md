@@ -435,7 +435,7 @@ It had four production callers: alberta's three launches (`desk.py:227`,
 dotfiles' `run_command`, when `update` is given real streams, as `main` gives
 it `sys.stdout` and `sys.stderr`. The fifth caller, alberta's
 `test_face_window.py:518`, is a test. A `grep` for
-`proc.through` over alberta, dotfiles, petstore, `~/interview` and `~/.hobby`
+`proc.through` over alberta, dotfiles, petstore, `[home]/interview` and `[home]/.hobby`
 finds these four in production and no other (`.ephemera/hazel-output-70/refs.sh`
 is the shape). The three launches move to `quietly` and `run_command` to
 `wait`, which replaces it for a process's own streams. For a batch child there is no replacement: output that bypasses
