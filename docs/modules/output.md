@@ -482,7 +482,8 @@ then are:
 `FR-6.3`, the row for `through`, is superseded by rows for `logged` and
 `quietly`, and its two `COVERS` marks in `tests/test_proc.py` (lines 51 and 63)
 move with them. `FR-6.1`, `FR-6.4` and `FR-6.5` are unchanged. The supersession
-is done in the task `split-the-stages-to-a-release`, with the rows for this module.
+is done in the change that removes `through`, the task `implement-the-proc-calls`
+in clank's `petstore/output` group, which retires `FR-6.3` with its marks.
 
 ### flush
 
